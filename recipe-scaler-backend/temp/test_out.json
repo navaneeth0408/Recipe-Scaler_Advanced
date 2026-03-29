@@ -1,0 +1,50 @@
+{
+  "1 cup milk": [
+    {
+      "substitute": "water + milk powder",
+      "ratio": "1:1",
+      "updated_quantity": "1.0 cup",
+      "reason": "Mix water with milk powder for exact replication"
+    },
+    {
+      "substitute": "cream + water",
+      "ratio": "0.5 + 0.5",
+      "updated_quantity": "0.5 cup + 0.5 cup",
+      "reason": "Diluted cream mimics whole milk richness"
+    },
+    {
+      "substitute": "evaporated milk + water",
+      "ratio": "0.5 + 0.5",
+      "updated_quantity": "0.5 cup + 0.5 cup",
+      "reason": "Diluted evaporated milk works well in baking"
+    }
+  ],
+  "1 clove garlic": [
+    {
+      "substitute": "garlic powder",
+      "ratio": "1/8",
+      "updated_quantity": "0.125 tsp",
+      "reason": "1/8 tsp powder per clove"
+    },
+    {
+      "substitute": "garlic flakes",
+      "ratio": "1/2",
+      "updated_quantity": "0.5 clove",
+      "reason": "1/2 tsp flakes per clove"
+    }
+  ],
+  "2 cup butter": [
+    {
+      "substitute": "oil",
+      "ratio": "3/4",
+      "updated_quantity": "1.5 cup",
+      "reason": "Closest fat replacement for baking and cooking"
+    },
+    {
+      "substitute": "margarine",
+      "ratio": "1:1",
+      "updated_quantity": "2.0 cup",
+      "reason": "Direct 1:1 substitute in almost all recipes"
+    }
+  ]
+}
