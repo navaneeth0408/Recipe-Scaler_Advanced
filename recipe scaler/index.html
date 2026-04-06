@@ -56,6 +56,20 @@
     <div id="thumbnailContainer"></div>
     <div id="ingredientsList" class="fade-in"></div>
 
+    <div class="translate-section card" style="margin-top: 20px; display: none;" id="translateSection">
+      <h3 style="margin-top: 0;">Optional: Translate Ingredients</h3>
+      <div class="translate-controls" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+        <label for="translateLanguage" style="font-weight: 500;">Translate To:</label>
+        <select id="translateLanguage" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+          <option value="english">English</option>
+          <option value="malayalam">Malayalam</option>
+        </select>
+        <button id="translateBtn" class="secondary-btn" style="margin: 0;">
+          Translate Ingredients
+        </button>
+      </div>
+    </div>
+
     <div class="scale-options">
       <h2>Step 2: Scale Recipe</h2>
       <div class="scale-controls">
@@ -72,9 +86,7 @@
         </div>
 
         <div id="available-scaling" class="scaling-method" style="display:none">
-          <select id="availableIngredient">
-            <!-- Will be populated with ingredients -->
-          </select>
+          <select id="availableIngredient"></select>
           <input type="number" id="availableAmount" placeholder="Amount available" min="0.1" step="0.1">
         </div>
 
@@ -99,17 +111,28 @@
     </div>
   </div>
 
+  <!--
+    SCRIPT LOAD ORDER (important):
+    1. api-client.js   — API communication layer
+    2. script.js       — legacy helpers + manual-recipe scaleRecipe fallback
+    3. ui-controller.js — defines window.scaleRecipe (overrides script.js version)
+    4. recipe-enhancements.js — UI enhancements
+  -->
   <script src="api-client.js"></script>
+  <script src="script.js"></script>
   <script src="ui-controller.js"></script>
   <script src="recipe-enhancements.js"></script>
+
   <script>
+    // Mark that ui-controller is loaded so script.js helpers can detect it
+    window._uiControllerLoaded = true;
+
     document.getElementById('enterRecipeManually').addEventListener('click', function () {
       window.location.href = 'enter_recipe.html';
     });
 
-    // Load saved recipes when page loads
     window.addEventListener('DOMContentLoaded', function () {
-      // Tab switching functionality
+      // Tab switching
       document.querySelectorAll('.search-tab').forEach(tab => {
         tab.addEventListener('click', function () {
           document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
@@ -120,7 +143,7 @@
         });
       });
 
-      // Check if returning from "Modify Scaling"
+      // Return from "Modify Scaling"
       if (sessionStorage.getItem('modifyingRecipe') === 'true') {
         sessionStorage.removeItem('modifyingRecipe');
         const youtubeLink = sessionStorage.getItem('youtubeVideoUrl');

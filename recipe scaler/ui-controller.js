@@ -2,60 +2,27 @@
  * ============================================================================
  * UI CONTROLLER / BRIDGE LAYER
  * ============================================================================
- * 
- * This file serves as the bridge between the HTML UI and the apiClient.
- * 
- * ARCHITECTURE:
- *   HTML (onclick handlers) → UI Controller → apiClient → Backend API
- *                          ↓
- *                   DOM Rendering
- * 
- * RESPONSIBILITIES:
- *   1. Expose global functions for HTML onclick handlers
- *   2. Validate user input before API calls
- *   3. Show/hide loading states
- *   4. Handle errors gracefully
- *   5. Render API responses into the DOM
- *   6. Manage session/local storage for navigation
- * 
- * DO NOT MODIFY: The apiClient object (api-client.js)
- * DO NOT ADD: New frameworks or complex libraries
- * 
- * ============================================================================
  */
 
 // ============================================================================
 // INPUT VALIDATION HELPERS
 // ============================================================================
 
-/**
- * Validates a YouTube URL
- * Accepts: youtube.com/watch?v=..., youtu.be/..., youtube.com/embed/...
- */
 function isValidYouTubeUrl(url) {
   if (!url || typeof url !== 'string') return false;
   const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)\//;
   return youtubeRegex.test(url.trim());
 }
 
-/**
- * Validates a search query (non-empty string)
- */
 function isValidSearchQuery(query) {
   return query && typeof query === 'string' && query.trim().length > 0;
 }
 
-/**
- * Validates scaling value (positive number)
- */
 function isValidScalingValue(value) {
   const num = parseFloat(value);
   return !isNaN(num) && num > 0;
 }
 
-/**
- * Safe DOM element getter with error handling
- */
 function getElement(elementId) {
   const element = document.getElementById(elementId);
   if (!element) {
@@ -68,61 +35,225 @@ function getElement(elementId) {
 // LOADING STATE MANAGEMENT
 // ============================================================================
 
-/**
- * Show loading spinner
- * Expects: <div id="loading" class="loading"></div> in HTML
- */
 function showLoadingState() {
   const loadingEl = getElement('loading');
-  if (loadingEl) {
-    loadingEl.style.display = 'block';
-  }
+  if (loadingEl) loadingEl.style.display = 'block';
 }
 
-/**
- * Hide loading spinner
- */
 function hideLoadingState() {
   const loadingEl = getElement('loading');
-  if (loadingEl) {
-    loadingEl.style.display = 'none';
-  }
+  if (loadingEl) loadingEl.style.display = 'none';
 }
 
 // ============================================================================
 // ERROR HANDLING & USER FEEDBACK
 // ============================================================================
 
-/**
- * Display error message to user
- * Uses alert for now; can be upgraded to toast notifications
- */
 function showError(message) {
   const fullMessage = message || 'An unexpected error occurred. Please try again.';
   console.error('UI Error:', fullMessage);
   alert(fullMessage);
 }
 
-/**
- * Display success message to user
- */
 function showSuccess(message) {
   console.log('UI Success:', message);
-  // Could upgrade to toast notification
-  // alert(message); // Optional: uncomment for visible feedback
 }
+
+// ============================================================================
+// TRANSLATION STATE & DICTIONARY
+// ============================================================================
+
+let originalIngredients = [];
+let translatedIngredients = [];
+let sourceLanguage = "english";
+let currentLanguage = "source";
+
+const ingredientMap = {
+  "tomato": "തക്കാളി",
+  "onion": "സവാള",
+  "green chilli": "പച്ചമുളക്",
+  "chilli": "മുളക്",
+  "capsicum": "കാപ്സിക്കം",
+  "carrot": "കാരറ്റ്",
+  "potato": "ഉരുളക്കിഴങ്ങ്",
+  "ginger": "ഇഞ്ചി",
+  "garlic": "വെളുത്തുള്ളി",
+  "curry leaves": "കരിവേപ്പില",
+  "coriander leaves": "മല്ലിയില",
+  "turmeric": "മഞ്ഞൾ",
+  "salt": "ഉപ്പ്",
+  "sugar": "പഞ്ചസാര",
+  "oil": "എണ്ണ",
+  "mustard seeds": "കടുക്",
+  "cumin seeds": "ജീരകം",
+  "pepper": "കുരുമുളക്",
+  "green pepper": "പച്ച കാപ്സിക്കം",
+  "red pepper": "ചുവപ്പ് കാപ്സിക്കം",
+  "cheese": "ചീസ്",
+  "mozzarella": "മൊസറെല്ല",
+  "butter": "വെണ്ണ",
+  "milk": "പാൽ",
+  "flour": "മാവ്"
+};
+
+const reverseMap = Object.fromEntries(
+  Object.entries(ingredientMap).map(([k, v]) => [v, k])
+);
+
+const unitMap = {
+  "cup": "കപ്പ്",
+  "cups": "കപ്പ്",
+  "tablespoon": "ടേബിൾസ്പൂൺ",
+  "tablespoons": "ടേബിൾസ്പൂൺ",
+  "tbsp": "ടേബിൾസ്പൂൺ",
+  "teaspoon": "ടീസ്പൂൺ",
+  "teaspoons": "ടീസ്പൂൺ",
+  "tsp": "ടീസ്പൂൺ",
+  "gram": "ഗ്രാം",
+  "grams": "ഗ്രാം",
+  "kg": "കിലോ",
+  "ml": "മില്ലി",
+  "liter": "ലിറ്റർ",
+  "litre": "ലിറ്റർ",
+  "piece": "കഷണം",
+  "pieces": "കഷണങ്ങൾ",
+  "slice": "സ്ലൈസ്",
+  "slices": "സ്ലൈസ്"
+};
+
+const reverseUnitMap = Object.fromEntries(
+  Object.entries(unitMap).map(([k, v]) => [v, k])
+);
+
+const descriptorMap = {
+  "warm": "ചൂട്",
+  "hot": "ചൂട്",
+  "cold": "തണുപ്പ്",
+  "soft": "സോഫ്റ്റ്",
+  "grated": "തുരന്ന",
+  "chopped": "അരിഞ്ഞ",
+  "minced": "ചെറുതായി അരിഞ്ഞ",
+  "fresh": "പുതിയത്",
+  "large": "വലിയ",
+  "small": "ചെറിയ",
+  "to": "",
+  "taste": "രുചിക്ക്"
+};
+
+const reverseDescriptorMap = Object.fromEntries(
+  Object.entries(descriptorMap).map(([k, v]) => [v, k])
+);
+
+function isMalayalam(word) {
+  return /[\u0D00-\u0D7F]/.test(word);
+}
+
+function isNumber(word) {
+  return /^[0-9\/\.]+$/.test(word);
+}
+
+function transliterate(word) {
+  return word
+    .replace(/carrot/i, "കാരറ്റ്")
+    .replace(/thyme/i, "തൈം")
+    .replace(/scotch/i, "സ്കോച്ച്")
+    .replace(/bacon/i, "ബേക്കൺ")
+    .replace(/sausage/i, "സോസേജ്")
+    .replace(/pepper/i, "പെപ്പർ")
+    .replace(/cheese/i, "ചീസ്")
+    .replace(/butter/i, "ബട്ടർ")
+    .replace(/water/i, "വെള്ളം");
+}
+
+function processTranslation(text, selectedLang) {
+  if (!text) return text;
+
+  const isToMalayalam = selectedLang === 'malayalam';
+
+  if (!isToMalayalam) {
+    // Very basic reverse lookup for entire strings if available, or just split and return (since Malayalam to English transliteration fallback is disabled)
+    let processedName = text.trim();
+    let lowerName = processedName.toLowerCase();
+    if (reverseMap[lowerName]) return reverseMap[lowerName];
+    if (reverseUnitMap[lowerName]) return reverseUnitMap[lowerName];
+    if (reverseDescriptorMap[lowerName]) return reverseDescriptorMap[lowerName];
+
+    const words = processedName.split(" ");
+    return words.map(word => {
+      let clean = word.toLowerCase().replace(/[.,]/g, '');
+      if (reverseMap[clean]) return reverseMap[clean];
+      if (reverseUnitMap[clean]) return reverseUnitMap[clean];
+      if (reverseDescriptorMap[clean]) return reverseDescriptorMap[clean];
+      return word;
+    }).join(" ");
+  }
+
+  // To Malayalam Strict Pipeline
+  return text.split(" ").map(word => {
+    let clean = word.toLowerCase().replace(/[.,]/g, '');
+
+    if (isMalayalam(word)) return word;
+    if (isNumber(word)) return word;
+
+    if (ingredientMap[clean]) return ingredientMap[clean];
+    if (unitMap[clean]) return unitMap[clean];
+    if (descriptorMap[clean] !== undefined) return descriptorMap[clean] === "" ? "" : descriptorMap[clean];
+
+    return transliterate(word);
+  }).filter(Boolean).join(" ");
+}
+
+function translateIngredients() {
+  const selectedLang = document.getElementById('translateLanguage')?.value || 'english';
+
+  if ((selectedLang === 'english' && sourceLanguage === 'english') ||
+    (selectedLang === 'malayalam' && sourceLanguage === 'malayalam')) {
+    // User is translating to the language it's already in
+    currentLanguage = 'source';
+    window.currentIngredients = JSON.parse(JSON.stringify(originalIngredients));
+    renderIngredientsList(window.currentIngredients, 'ingredientsList', true);
+    return;
+  }
+
+  translatedIngredients = originalIngredients.map(ing => {
+    let newUnit = processTranslation(ing.unit, selectedLang);
+    let newName = processTranslation(ing.name, selectedLang);
+
+    return {
+      ...ing,
+      unit: newUnit,
+      name: newName
+    };
+  });
+
+  currentLanguage = 'translated';
+  window.currentIngredients = translatedIngredients;
+  renderIngredientsList(window.currentIngredients, 'ingredientsList', true);
+} // Optional translation end
 
 // ============================================================================
 // DOM RENDERING HELPERS - INGREDIENTS
 // ============================================================================
 
-/**
- * Render a list of ingredients to the DOM
- * @param {Array} ingredients - Array of ingredient objects
- * @param {string} containerId - ID of container element
- */
-function renderIngredientsList(ingredients, containerId = 'ingredientsList') {
+function renderIngredientsList(ingredients, containerId = 'ingredientsList', isTranslation = false) {
   window.currentIngredients = ingredients;
+
+  if (!isTranslation) {
+    originalIngredients = JSON.parse(JSON.stringify(ingredients || []));
+    const malayalamRegex = /[\u0D00-\u0D7F]/;
+    const isMalayalam = originalIngredients.some(ing => malayalamRegex.test(ing.name || ''));
+    sourceLanguage = isMalayalam ? "malayalam" : "english";
+    currentLanguage = "source";
+
+    const translateSection = document.getElementById('translateSection');
+    if (translateSection) {
+      translateSection.style.display = (ingredients && ingredients.length > 0) ? 'block' : 'none';
+      const translateDropdown = document.getElementById('translateLanguage');
+      if (translateDropdown) {
+        translateDropdown.value = sourceLanguage === 'english' ? 'malayalam' : 'english';
+      }
+    }
+  }
 
   const container = getElement(containerId);
   if (!container) return;
@@ -138,40 +269,21 @@ function renderIngredientsList(ingredients, containerId = 'ingredientsList') {
     const quantity = ingredient.quantity || 1;
     const unit = ingredient.unit || '';
     const name = ingredient.name || 'Unknown';
-    let displayText;
 
-    // Visible text inside the card, e.g. "1 cup milk"
     const isWhole = unit.trim().toLowerCase() === 'whole';
+    let displayText;
     if (isWhole) {
-      if (quantity === 1) {
-        displayText = name.trim();
-      } else {
-        displayText = `${quantity} ${name}`.replace(/\s+/g, ' ').trim();
-      }
+      displayText = quantity === 1 ? name.trim() : `${quantity} ${name}`.trim();
     } else {
       displayText = `${quantity} ${unit} ${name}`.replace(/\s+/g, ' ').trim();
     }
 
     const div = document.createElement('div');
     div.className = 'ingredient-card';
-    div.style.backgroundColor = 'white';
-    div.style.padding = '15px';
-    div.style.borderRadius = '10px';
-    div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
-    div.style.marginBottom = '15px';
-    div.style.maxWidth = '80%';
-    div.style.marginLeft = 'auto';
-    div.style.marginRight = 'auto';
-    div.style.display = 'flex';
-    div.style.flexDirection = 'column';
+    div.style.cssText = 'background:white;padding:15px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:15px;max-width:80%;margin-left:auto;margin-right:auto;display:flex;flex-direction:column;';
 
     const row = document.createElement('div');
-    row.style.display = 'flex';
-    row.style.justifyContent = 'space-between';
-    row.style.alignItems = 'center';
-    row.style.gap = '15px';
-    row.style.width = '100%';
-    row.style.flexWrap = 'wrap';
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:15px;width:100%;flex-wrap:wrap;';
 
     row.innerHTML = `
       <input 
@@ -180,20 +292,14 @@ function renderIngredientsList(ingredients, containerId = 'ingredientsList') {
         readonly 
         class="ingredient-name"
         data-ingredient-index="${index}"
-        style="flex-grow: 1; margin: 0; min-width: 200px;"
+        style="flex-grow:1;margin:0;min-width:200px;"
       >
-      <button class="substitute-btn" style="background-color: #F2D479; color: #333; margin: 0; padding: 10px 15px; border-radius: 6px; font-weight: 600; white-space: nowrap;">Find Substitute</button>
+      <button class="substitute-btn" style="background-color:#F2D479;color:#333;margin:0;padding:10px 15px;border-radius:6px;font-weight:600;white-space:nowrap;">Find Substitute</button>
     `;
 
     const dropdown = document.createElement('div');
     dropdown.className = 'substitute-dropdown';
-    dropdown.style.display = 'none';
-    dropdown.style.backgroundColor = '#f9f9f9';
-    dropdown.style.border = '1px solid #e0e0e0';
-    dropdown.style.borderRadius = '8px';
-    dropdown.style.padding = '15px';
-    dropdown.style.marginTop = '15px';
-    dropdown.style.textAlign = 'left';
+    dropdown.style.cssText = 'display:none;background-color:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:15px;margin-top:15px;text-align:left;';
 
     const btn = row.querySelector('.substitute-btn');
     btn.onclick = (e) => {
@@ -201,7 +307,6 @@ function renderIngredientsList(ingredients, containerId = 'ingredientsList') {
       handleIngredientClick(ingredient, dropdown, btn);
     };
 
-    // Close when clicking outside
     document.addEventListener('click', (e) => {
       if (!div.contains(e.target) && dropdown.style.display === 'block') {
         dropdown.style.display = 'none';
@@ -227,11 +332,9 @@ async function handleIngredientClick(ingredient, dropdown, btn) {
 
   dropdown.style.display = 'block';
 
-  if (dropdown.hasAttribute('data-fetched')) {
-    return; // Already loaded
-  }
+  if (dropdown.hasAttribute('data-fetched')) return;
 
-  dropdown.innerHTML = '<p style="margin:0; color:#666;">Finding substitutes <i class="fas fa-spinner fa-spin"></i></p>';
+  dropdown.innerHTML = '<p style="margin:0;color:#666;">Finding substitutes <i class="fas fa-spinner fa-spin"></i></p>';
 
   try {
     const data = await apiClient.getSubstitutions(
@@ -245,46 +348,50 @@ async function handleIngredientClick(ingredient, dropdown, btn) {
 
   } catch (error) {
     console.error('UI Controller Error [handleIngredientClick]:', error);
-    dropdown.innerHTML = '<p style="color:red; margin:0;">Failed to fetch substitutions.</p>';
+    dropdown.innerHTML = '<p style="color:red;margin:0;">Failed to fetch substitutions.</p>';
   }
 }
 
+/**
+ * FIX #2: The API returns `data.substitutes` (not `data.substitutions`).
+ * Each substitute has { name, ratio, note } fields per the Substitute schema.
+ */
 function renderSubstitutions(data, container) {
   if (!container) return;
-  container.innerHTML = "";
+  container.innerHTML = '';
 
-  if (!data || !data.substitutions || data.substitutions.length === 0) {
-    container.innerHTML = '<p style="margin:0;">No substitutions found.</p>';
+  // Support both field names for safety
+  const subs = (data && (data.substitutes || data.substitutions)) || [];
+
+  if (!subs || subs.length === 0) {
+    container.innerHTML = '<p style="margin:0;color:#666;">No substitutions found.</p>';
     return;
   }
 
-  const heading = document.createElement("h4");
-  heading.innerText = "Substitutions";
-  heading.style.marginTop = "0";
-  heading.style.marginBottom = "10px";
-  heading.style.color = "#5a8c5a";
+  const heading = document.createElement('h4');
+  heading.innerText = 'Substitutions';
+  heading.style.cssText = 'margin-top:0;margin-bottom:10px;color:#5a8c5a;';
   container.appendChild(heading);
 
-  data.substitutions.forEach(sub => {
-    const div = document.createElement("div");
-    div.style.borderLeft = "3px solid #E63946";
-    div.style.paddingLeft = "10px";
-    div.style.marginBottom = "10px";
+  subs.forEach(sub => {
+    const div = document.createElement('div');
+    div.style.cssText = 'border-left:3px solid #E63946;padding-left:10px;margin-bottom:10px;';
+
+    // API returns: { name, ratio, note }
+    const name = sub.name || sub.substitute || 'Alternative';
+    const ratio = sub.ratio || '';
+    const note = sub.note || sub.reason || '';
 
     div.innerHTML = `
-            <strong style="display:block; color:#333;">${sub.substitute}</strong>
-            <span style="font-size:0.9rem; color:#666; display:block;">Use: ${sub.updated_quantity}</span>
-            <small style="color:#888; display:block;">${sub.reason || ''}</small>
-        `;
+      <strong style="display:block;color:#333;">${name}</strong>
+      ${ratio ? `<span style="font-size:0.9rem;color:#666;display:block;">Ratio: ${ratio}</span>` : ''}
+      ${note ? `<small style="color:#888;display:block;">${note}</small>` : ''}
+    `;
 
     container.appendChild(div);
   });
 }
 
-/**
- * Populate "Available Ingredients" dropdown for scaling mode
- * @param {Array} ingredients - Array of ingredient objects
- */
 function populateAvailableIngredientsDropdown(ingredients) {
   const dropdown = getElement('availableIngredient');
   if (!dropdown) return;
@@ -311,20 +418,12 @@ function populateAvailableIngredientsDropdown(ingredients) {
 // DOM RENDERING HELPERS - YOUTUBE THUMBNAIL
 // ============================================================================
 
-/**
- * Render YouTube video thumbnail and metadata
- * @param {string} thumbnailUrl - URL to video thumbnail
- * @param {string} videoTitle - Title of the video
- * @param {string} youtubeUrl - Full YouTube URL
- * @param {string} containerId - ID of container element
- */
 function renderVideoThumbnail(thumbnailUrl, videoTitle, youtubeUrl, containerId = 'thumbnailContainer') {
   const container = getElement(containerId);
   if (!container) return;
 
   container.innerHTML = '';
 
-  // Image
   const img = document.createElement('img');
   img.src = thumbnailUrl;
   img.alt = 'YouTube Thumbnail';
@@ -334,24 +433,20 @@ function renderVideoThumbnail(thumbnailUrl, videoTitle, youtubeUrl, containerId 
   };
   container.appendChild(img);
 
-  // Title
   const title = document.createElement('p');
   title.innerText = videoTitle || 'Untitled Video';
   title.style.fontWeight = 'bold';
   title.style.marginTop = '10px';
   container.appendChild(title);
 
-  // Link to watch on YouTube
   if (youtubeUrl) {
     const linkContainer = document.createElement('div');
     linkContainer.className = 'video-source';
-
     const link = document.createElement('a');
     link.href = youtubeUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.innerHTML = '<i class="fab fa-youtube"></i> Watch on YouTube';
-
     linkContainer.appendChild(link);
     container.appendChild(linkContainer);
   }
@@ -361,11 +456,6 @@ function renderVideoThumbnail(thumbnailUrl, videoTitle, youtubeUrl, containerId 
 // DOM RENDERING HELPERS - SEARCH RESULTS
 // ============================================================================
 
-/**
- * Render YouTube search results to the DOM
- * @param {Array} results - Array of search result objects
- * @param {string} containerId - ID of results container
- */
 function renderSearchResults(results, containerId = 'searchResults') {
   const container = getElement(containerId);
   if (!container) return;
@@ -373,7 +463,7 @@ function renderSearchResults(results, containerId = 'searchResults') {
   container.innerHTML = '';
 
   if (!results || results.length === 0) {
-    container.innerHTML = '<p style="color: #666; padding: 20px;">No results found. Try a different search term.</p>';
+    container.innerHTML = '<p style="color:#666;padding:20px;">No results found. Try a different search term.</p>';
     return;
   }
 
@@ -386,9 +476,7 @@ function renderSearchResults(results, containerId = 'searchResults') {
 
     const publishedDate = new Date(result.published_date);
     const formattedDate = publishedDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: 'numeric', month: 'short', day: 'numeric'
     });
 
     const views = result.views ? formatViewCount(result.views) : 'N/A';
@@ -418,14 +506,6 @@ function renderSearchResults(results, containerId = 'searchResults') {
   container.appendChild(grid);
 }
 
-/**
- * Render pagination buttons
- * @param {boolean} hasPrev - Whether there's a previous page
- * @param {boolean} hasNext - Whether there's a next page
- * @param {string} prevToken - Previous page token
- * @param {string} nextToken - Next page token
- * @param {string} containerId - ID of pagination container
- */
 function renderPaginationButtons(hasPrev, hasNext, prevToken, nextToken, containerId = 'pagination') {
   const container = getElement(containerId);
   if (!container) return;
@@ -449,57 +529,25 @@ function renderPaginationButtons(hasPrev, hasNext, prevToken, nextToken, contain
   }
 }
 
-/**
- * Helper: Format view count (1000 -> 1K, 1000000 -> 1M)
- */
 function formatViewCount(viewCount) {
   const count = parseInt(viewCount, 10);
   if (isNaN(count)) return '0';
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`;
-  }
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
-  }
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
   return count.toString();
 }
 
-/**
- * Helper: Escape HTML to prevent XSS
- */
 function escapeHtml(text) {
   if (!text) return '';
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
 // ============================================================================
-// GLOBAL UI FUNCTIONS (Exposed on window for HTML onclick handlers)
+// GLOBAL UI FUNCTIONS
 // ============================================================================
 
-/**
- * FUNCTION: Fetch ingredients from YouTube video
- * 
- * UI Flow:
- *   1. Validate YouTube URL input
- *   2. Show loading state
- *   3. Call apiClient.extractYouTubeMetadata()
- *   4. Render thumbnail
- *   5. Parse & render ingredients
- *   6. Hide loading state
- * 
- * Error Handling: Graceful - shows user-friendly messages
- * 
- * @global
- */
 async function fetchIngredients() {
-  // === INPUT VALIDATION ===
   const youtubeLink = document.getElementById('youtubeLink')?.value || '';
 
   if (!isValidYouTubeUrl(youtubeLink)) {
@@ -507,15 +555,11 @@ async function fetchIngredients() {
     return;
   }
 
-  // === LOADING STATE ===
   showLoadingState();
 
   try {
-    // === API CALL ===
-    console.log('UI Controller: Fetching YouTube metadata');
     const response = await apiClient.extractYouTubeMetadata(youtubeLink.trim());
 
-    // === ERROR CHECKING ===
     if (!response.success || !response.metadata) {
       showError('Could not extract video information. Try another video.');
       return;
@@ -523,48 +567,35 @@ async function fetchIngredients() {
 
     const metadata = response.metadata;
 
-    // === STORE RECIPE METADATA FOR SCALED PAGE ===
     sessionStorage.setItem('recipeName', metadata.title || 'Scaled Recipe');
     sessionStorage.setItem('mainIngredient', metadata.channel || '');
     sessionStorage.setItem('youtubeVideoUrl', youtubeLink.trim());
 
-    // === RENDER THUMBNAIL ===
-    renderVideoThumbnail(
-      metadata.thumbnail_url,
-      metadata.title,
-      youtubeLink
-    );
+    renderVideoThumbnail(metadata.thumbnail_url, metadata.title, youtubeLink);
 
-    // === PARSE & RENDER INGREDIENTS ===
     let ingredientsFound = false;
     const description = metadata.description || '';
     const isLikelyIngredientList = description.includes('\n') && description.length < 3000;
     if (description && isLikelyIngredientList) {
-      console.log('UI Controller: Parsing ingredients from description');
       ingredientsFound = await parseIngredientsUI(description);
     }
 
     if (!ingredientsFound) {
-      console.log('UI Controller: No ingredients in description, falling back to audio extraction');
       const loadingEl = getElement('loading');
       const originalLoadingHtml = loadingEl ? loadingEl.innerHTML : '';
       if (loadingEl) {
         loadingEl.innerHTML = `
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
-            <div style="margin: 0 auto 15px; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #E63946; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <p style="margin-top: 15px; color: #2B2D42; font-size: 15px; text-align: center; font-weight: 500;">No ingredients in description.<br>Extracting from audio...</p>
-            <p style="margin-top: 5px; color: #666; font-size: 13px; text-align: center;">(This may take up to a minute)</p>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+            <div style="margin:0 auto 15px;width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #E63946;border-radius:50%;animation:spin 1s linear infinite;"></div>
+            <p style="margin-top:15px;color:#2B2D42;font-size:15px;text-align:center;font-weight:500;">No ingredients in description.<br>Extracting from audio...</p>
+            <p style="margin-top:5px;color:#666;font-size:13px;text-align:center;">(This may take up to a minute)</p>
           </div>
         `;
       }
 
-      // Call audio extraction with the URL
       await extractAudioIngredients(youtubeLink.trim());
 
-      // Restore original loading element HTML for future calls
-      if (loadingEl) {
-        loadingEl.innerHTML = originalLoadingHtml;
-      }
+      if (loadingEl) loadingEl.innerHTML = originalLoadingHtml;
     } else {
       showSuccess('Video loaded successfully!');
     }
@@ -576,14 +607,6 @@ async function fetchIngredients() {
   }
 }
 
-/**
- * FUNCTION: Parse ingredients from raw text
- * 
- * Backend does the heavy lifting; UI just renders the result.
- * 
- * @param {string} text - Raw text to parse (from YouTube description, etc.)
- * @global
- */
 async function parseIngredientsUI(text) {
   if (!text || typeof text !== 'string' || text.trim().length === 0) {
     console.warn('UI Controller: No text to parse');
@@ -591,44 +614,21 @@ async function parseIngredientsUI(text) {
   }
 
   try {
-    console.log('UI Controller: Calling apiClient.parseIngredients()');
     const response = await apiClient.parseIngredients(text);
 
     if (response.success && response.ingredients) {
-      // === RENDER INGREDIENTS ===
       renderIngredientsList(response.ingredients);
-
-      // === POPULATE DROPDOWN ===
       populateAvailableIngredientsDropdown(response.ingredients);
-
-      console.log(`UI Controller: Parsed ${response.ingredients.length} ingredients`);
       return true;
-    } else {
-      console.warn('UI Controller: Backend returned no ingredients');
-      return false;
     }
+    return false;
   } catch (error) {
     console.error('UI Controller Error [parseIngredientsUI]:', error);
     return false;
   }
 }
 
-/**
- * FUNCTION: Search YouTube for recipes
- * 
- * UI Flow:
- *   1. Validate search query
- *   2. Show loading state
- *   3. Call apiClient.searchYouTube()
- *   4. Render search results
- *   5. Render pagination
- *   6. Hide loading state
- * 
- * @param {string} pageToken - Optional pagination token
- * @global
- */
 async function searchYouTubeUI(pageToken = '') {
-  // === INPUT VALIDATION ===
   const query = document.getElementById('searchQuery')?.value || '';
   const category = document.getElementById('recipeCategory')?.value || '';
 
@@ -637,15 +637,11 @@ async function searchYouTubeUI(pageToken = '') {
     return;
   }
 
-  // === LOADING STATE ===
   showLoadingState();
 
   try {
-    // === API CALL ===
-    console.log('UI Controller: Searching YouTube', { query, category });
     const response = await apiClient.searchYouTube(query, category, pageToken);
 
-    // === ERROR CHECKING ===
     if (!response.success) {
       showError('YouTube search failed. Please try again.');
       renderSearchResults([]);
@@ -654,14 +650,11 @@ async function searchYouTubeUI(pageToken = '') {
     }
 
     const results = response.results || [];
-    const hasNext = !!response.next_page_token;
-    const hasPrev = !!response.prev_page_token;
-
-    // === RENDER RESULTS ===
     renderSearchResults(results);
-    renderPaginationButtons(hasPrev, hasNext, response.prev_page_token, response.next_page_token);
-
-    console.log(`UI Controller: Found ${results.length} results`);
+    renderPaginationButtons(
+      !!response.prev_page_token, !!response.next_page_token,
+      response.prev_page_token, response.next_page_token
+    );
   } catch (error) {
     console.error('UI Controller Error [searchYouTubeUI]:', error);
     showError(`Search error:\n${error.message}`);
@@ -672,27 +665,14 @@ async function searchYouTubeUI(pageToken = '') {
   }
 }
 
-/**
- * FUNCTION: Use a video from search results
- * 
- * Sets the video URL in the input field and fetches ingredients.
- * 
- * @param {string} videoUrl - Full YouTube video URL
- * @global
- */
 function useVideoFromSearch(videoUrl) {
   const input = getElement('youtubeLink');
   if (!input) return;
 
-  // === SET VIDEO URL ===
   input.value = videoUrl;
 
-  // === SWITCH TAB ===
-  const tabs = document.querySelectorAll('.search-tab');
-  const contents = document.querySelectorAll('.tab-content');
-
-  tabs.forEach(tab => tab.classList.remove('active'));
-  contents.forEach(content => content.classList.remove('active'));
+  document.querySelectorAll('.search-tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
   const directLinkTab = document.querySelector('[data-tab="direct-link"]');
   const directLinkContent = getElement('direct-link');
@@ -700,34 +680,15 @@ function useVideoFromSearch(videoUrl) {
   if (directLinkTab) directLinkTab.classList.add('active');
   if (directLinkContent) directLinkContent.classList.add('active');
 
-  // === CLEAR PREVIOUS DATA ===
   const thumbnailContainer = getElement('thumbnailContainer');
   const ingredientsList = getElement('ingredientsList');
   if (thumbnailContainer) thumbnailContainer.innerHTML = '';
   if (ingredientsList) ingredientsList.innerHTML = '';
 
-  // === FETCH INGREDIENTS ===
   fetchIngredients();
 }
 
-/**
- * FUNCTION: Extract ingredients from YouTube audio
- * 
- * Uses speech-to-text to extract ingredients when description unavailable.
- * 
- * UI Flow:
- *   1. Validate YouTube URL input
- *   2. Show loading state
- *   3. Call apiClient.extractAudioIngredients()
- *   4. Parse & render ingredients
- *   5. Hide loading state
- * 
- * Error Handling: Graceful - shows user-friendly messages
- * 
- * @global
- */
 async function extractAudioIngredients(optionalUrl = null) {
-  // === INPUT VALIDATION ===
   let youtubeLink = '';
   if (typeof optionalUrl === 'string' && optionalUrl.trim().length > 0) {
     youtubeLink = optionalUrl;
@@ -736,32 +697,25 @@ async function extractAudioIngredients(optionalUrl = null) {
   }
 
   if (!isValidYouTubeUrl(youtubeLink)) {
-    showError('Please enter a valid YouTube Video URL.\n\nExamples:\n• youtube.com/watch?v=...\n• youtu.be/...');
+    showError('Please enter a valid YouTube Video URL.');
     return;
   }
 
-  // === LOADING STATE ===
   showLoadingState();
 
   try {
-    // === API CALL ===
-    console.log('UI Controller: Extracting ingredients from audio');
     const response = await apiClient.extractAudioIngredients(youtubeLink.trim());
 
-    // === ERROR CHECKING ===
     if (!response.success) {
       showError('Could not extract audio ingredients. Try fetching from description instead.');
       return;
     }
 
-    // === PARSE & RENDER INGREDIENTS ===
     if (response.ingredients && response.ingredients.length > 0) {
-      console.log('UI Controller: Rendering ingredients from audio extraction');
       renderIngredientsList(response.ingredients);
       populateAvailableIngredientsDropdown(response.ingredients);
       showSuccess('Ingredients extracted from audio successfully!');
     } else {
-      console.warn('UI Controller: No ingredients found in audio');
       renderIngredientsList([]);
       showError('No ingredients found in the audio. Try fetching from the description.');
     }
@@ -773,22 +727,29 @@ async function extractAudioIngredients(optionalUrl = null) {
   }
 }
 
+// ============================================================================
+// FIX #1: scaleRecipe — properly format scaled ingredient strings
+// ============================================================================
 /**
- * FUNCTION: Scale recipe ingredients
- * 
- * Takes current ingredients and scaling value, calls backend to scale.
- * 
- * @global
+ * The backend returns ingredients as objects: { name, quantity, unit, ... }
+ * We must format them as "quantity unit name" strings for scaled.html display.
+ * The old heuristic that detected a "malformed response" was itself causing
+ * the bug by prepending the scale factor to every ingredient string.
  */
 window.scaleRecipe = async function () {
-  const valueEl = document.getElementById("scaleValue") || document.getElementById("scalingValue");
-  const typeEl = document.getElementById("scaleType") || document.getElementById("scalingOption");
+  const valueEl = document.getElementById('scaleValue') || document.getElementById('scalingValue');
+  const typeEl = document.getElementById('scaleType') || document.getElementById('scalingOption');
 
   const value = valueEl ? Number(valueEl.value) : 1;
-  const type = typeEl ? typeEl.value : "servings";
+  const type = typeEl ? typeEl.value : 'servings';
 
   if (!window.currentIngredients || window.currentIngredients.length === 0) {
-    showError("No ingredients to scale. Please fetch a recipe first.");
+    showError('No ingredients to scale. Please fetch a recipe first.');
+    return;
+  }
+
+  if (!value || value <= 0) {
+    showError('Please enter a valid scaling value greater than 0.');
     return;
   }
 
@@ -796,52 +757,58 @@ window.scaleRecipe = async function () {
     showLoadingState();
 
     const response = await apiClient.scaleRecipe({
-      ingredients: window.currentIngredients || [],
+      ingredients: window.currentIngredients,
       value: value,
       type: type
     });
 
     if (response && response.ingredients) {
-      console.log('UI Controller: Raw scale response:', JSON.stringify(response.ingredients.slice(0, 3)));
+      console.log('[scaleRecipe] raw backend response ingredients:', JSON.stringify(response.ingredients.slice(0, 4)));
 
-      // Detect & fix malformed backend response:
-      // Backend bug returns {quantity: scaleFactor, unit: originalQty, name: "originalUnit originalName"}
-      // instead of {quantity: scaledQty, unit: originalUnit, name: originalName}
+      // Each item is { name, quantity, unit, ... } — format directly.
+      // Each item might have the original quantity inside `ing.name` and the scale factor in `ing.quantity`
       const scaledIngredients = response.ingredients.map(ing => {
-        let qty = ing.quantity;
-        let unit = ing.unit || '';
-        let name = ing.name || '';
+        const scaleFactor = ing.quantity || 1;
+        const originalName = (ing.name || '').trim();
 
-        // Heuristic: if quantity equals the scale value AND unit looks like a number,
-        // the backend shifted fields — reconstruct by multiplying original qty by scale
-        const unitAsNum = parseFloat(unit);
-        if (!isNaN(unitAsNum) && Math.abs(qty - value) < 0.001) {
-          // unit field actually holds the original quantity, name starts with original unit
-          const originalQty = unitAsNum;
-          // Extract the real unit from the start of the name field
-          const nameMatch = name.match(/^(\S+)\s+(.*)$/);
-          if (nameMatch) {
-            unit = nameMatch[1];
-            name = nameMatch[2];
+        // Extract numeric quantity from the beginning of the name
+        const regex = /^((?:\d+\s+)?\d+\/\d+|\d+(?:\.\d+)?)\s*(.*)$/;
+        const match = originalName.match(regex);
+
+        if (match) {
+          const qtyStr = match[1].trim();
+          const restOfIngredient = match[2].trim();
+
+          // Convert fractions to decimals
+          let numericQty = 0;
+          if (qtyStr.includes(' ') && qtyStr.includes('/')) {
+            const parts = qtyStr.split(' ');
+            const whole = parseFloat(parts[0]);
+            const fracParts = parts[1].split('/');
+            numericQty = whole + (parseFloat(fracParts[0]) / parseFloat(fracParts[1]));
+          } else if (qtyStr.includes('/')) {
+            const fracParts = qtyStr.split('/');
+            numericQty = parseFloat(fracParts[0]) / parseFloat(fracParts[1]);
           } else {
-            unit = '';
+            numericQty = parseFloat(qtyStr);
           }
-          qty = originalQty * value;
+
+          // Multiply original quantity by scale factor
+          const scaledQty = numericQty * scaleFactor;
+
+          // Format back into a readable quantity using existing helper
+          const rounded = parseFloat(scaledQty.toFixed(4).replace(/\.?0+$/, ''));
+          const formattedQty = formatNiceQuantity(rounded);
+
+          // Rebuild ingredient string
+          return `${formattedQty} ${restOfIngredient}`;
         }
 
-        // Format quantity nicely (avoid ugly floats like 2.0000001)
-        const formattedQty = Number.isInteger(qty)
-          ? qty
-          : parseFloat(qty.toFixed(4).replace(/\.?0+$/, ''));
-
-        const isWhole = unit.trim().toLowerCase() === 'whole';
-        const displayUnit = isWhole ? '' : unit;
-        return [formattedQty, displayUnit, name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        // Output raw ingredient if no numbers found
+        return originalName;
       });
 
-      console.log('UI Controller: Corrected ingredients:', scaledIngredients.slice(0, 3));
-
-      // Store as JSON array of strings for script-new.js
+      console.log('[scaleRecipe] formatted strings going to sessionStorage:', scaledIngredients.slice(0, 4));
       sessionStorage.setItem('scaledIngredients', JSON.stringify(scaledIngredients));
       sessionStorage.setItem('scaleFactor', value);
       sessionStorage.setItem('scaleType', type);
@@ -852,74 +819,83 @@ window.scaleRecipe = async function () {
 
       window.location.href = 'scaled.html';
     } else {
-      showError("Scaling failed: no ingredients returned.");
+      showError('Scaling failed: no ingredients returned.');
     }
-
   } catch (error) {
     console.error(error);
-    showError("Scaling failed: " + error.message);
+    showError('Scaling failed: ' + error.message);
+  } finally {
+    hideLoadingState();
   }
-
-  hideLoadingState();
 };
 
 /**
- * FUNCTION: Update scaling options display
- * 
- * Shows/hides different scaling input fields based on user selection.
- * Pure UI logic - no API calls.
- * 
- * @global
+ * Format a decimal number as a nice cooking quantity string.
+ * Examples: 0.5 → "½", 1.25 → "1 ¼", 8 → "8"
  */
+function formatNiceQuantity(qty) {
+  if (Number.isInteger(qty)) return qty.toString();
+
+  const whole = Math.floor(qty);
+  const frac = qty - whole;
+
+  const FRACTIONS = [
+    [0.125, '⅛'],
+    [0.167, '⅙'],
+    [0.25, '¼'],
+    [0.333, '⅓'],
+    [0.5, '½'],
+    [0.667, '⅔'],
+    [0.75, '¾'],
+  ];
+
+  for (const [val, sym] of FRACTIONS) {
+    if (Math.abs(frac - val) < 0.04) {
+      return whole > 0 ? `${whole} ${sym}` : sym;
+    }
+  }
+
+  // Fallback: up to 2 decimal places, strip trailing zeros
+  return parseFloat(qty.toFixed(2)).toString();
+}
+
 function updateScalingOptions() {
   const scalingOption = document.getElementById('scalingOption')?.value || 'servings';
 
-  // Hide all scaling methods
-  const methods = document.querySelectorAll('.scaling-method');
-  methods.forEach(method => {
+  document.querySelectorAll('.scaling-method').forEach(method => {
     method.style.display = 'none';
   });
 
-  // Show the selected one
   switch (scalingOption) {
     case 'servings':
-      const standardEl = getElement('standard-scaling');
-      if (standardEl) standardEl.style.display = 'block';
+    case 'quantity': {
+      const el = getElement('standard-scaling');
+      if (el) el.style.display = 'block';
       break;
-
-    case 'available':
-      const availableEl = getElement('available-scaling');
-      if (availableEl) availableEl.style.display = 'block';
+    }
+    case 'available': {
+      const el = getElement('available-scaling');
+      if (el) el.style.display = 'block';
       break;
-
-    case 'custom':
-      const customEl = getElement('custom-scaling');
-      if (customEl) customEl.style.display = 'block';
+    }
+    case 'custom': {
+      const el = getElement('custom-scaling');
+      if (el) el.style.display = 'block';
       break;
-
-    default:
-      const defaultEl = getElement('standard-scaling');
-      if (defaultEl) defaultEl.style.display = 'block';
+    }
+    default: {
+      const el = getElement('standard-scaling');
+      if (el) el.style.display = 'block';
+    }
   }
 }
 
-/**
- * FUNCTION: Load saved recipes
- * 
- * Retrieves recipes from localStorage and renders them.
- * Pure frontend - no API calls.
- * 
- * @global
- */
 function loadSavedRecipes() {
-  console.log('UI Controller: Loading saved recipes from localStorage');
-
   const container = getElement('saved-recipes');
   const list = getElement('saved-recipes-list');
 
   if (!container || !list) return;
 
-  // === GET DATA FROM STORAGE ===
   const savedRecipes = JSON.parse(localStorage.getItem('savedRecipes')) || [];
 
   if (savedRecipes.length === 0) {
@@ -930,7 +906,6 @@ function loadSavedRecipes() {
   container.style.display = 'block';
   list.innerHTML = '';
 
-  // === RENDER RECIPES ===
   savedRecipes.forEach(recipe => {
     const item = document.createElement('div');
     item.className = 'saved-recipe-item';
@@ -950,12 +925,6 @@ function loadSavedRecipes() {
   });
 }
 
-/**
- * FUNCTION: Load a specific saved recipe
- * 
- * @param {string} recipeId - ID of the recipe to load
- * @global
- */
 function loadRecipeUI(recipeId) {
   const savedRecipes = JSON.parse(localStorage.getItem('savedRecipes')) || [];
   const recipe = savedRecipes.find(r => r.id === recipeId);
@@ -965,7 +934,6 @@ function loadRecipeUI(recipeId) {
     return;
   }
 
-  // === STORE IN SESSION ===
   sessionStorage.setItem('recipeName', recipe.name);
   sessionStorage.setItem('mainIngredient', recipe.mainIngredient);
   sessionStorage.setItem('scaledIngredients', recipe.ingredients?.join('<br>') || '');
@@ -974,85 +942,48 @@ function loadRecipeUI(recipeId) {
     sessionStorage.setItem('youtubeVideoUrl', recipe.youtubeLink);
   }
 
-  // === NAVIGATE ===
   window.location.href = 'scaled.html';
 }
 
-/**
- * FUNCTION: Delete a saved recipe
- * 
- * @param {string} recipeId - ID of the recipe to delete
- * @global
- */
 function deleteRecipeUI(recipeId) {
-  if (!confirm('Are you sure you want to delete this recipe?')) {
-    return;
-  }
+  if (!confirm('Are you sure you want to delete this recipe?')) return;
 
   let savedRecipes = JSON.parse(localStorage.getItem('savedRecipes')) || [];
   savedRecipes = savedRecipes.filter(r => r.id !== recipeId);
-
   localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
   loadSavedRecipes();
-
   showSuccess('Recipe deleted.');
 }
 
-/**
- * PLACEHOLDER: Save recipe to localStorage
- * (Called from enter_recipe.html)
- * @global
- */
 function saveRecipeUI() {
   console.warn('UI Controller: saveRecipeUI() is a placeholder');
   showError('Save recipe feature is being configured.');
-  // TODO: Implement when recipe storage logic is finalized
 }
 
 // ============================================================================
 // INITIALIZE UI ON PAGE LOAD
 // ============================================================================
 
-/**
- * Initialize all UI interactions when page loads
- */
 function initializeUI() {
   console.log('UI Controller: Initializing...');
 
-  // Load saved recipes if container exists
-  if (getElement('saved-recipes')) {
-    loadSavedRecipes();
-  }
+  if (getElement('saved-recipes')) loadSavedRecipes();
 
-  // Setup tab switching
   const tabs = document.querySelectorAll('.search-tab');
   tabs.forEach(tab => {
     tab.addEventListener('click', function () {
-      // Remove active from all tabs and contents
-      document.querySelectorAll('.search-tab').forEach(t => {
-        t.classList.remove('active');
-      });
-      document.querySelectorAll('.tab-content').forEach(c => {
-        c.classList.remove('active');
-      });
-
-      // Add active to clicked tab and corresponding content
+      document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       this.classList.add('active');
       const tabId = this.getAttribute('data-tab');
       const content = getElement(tabId);
-      if (content) {
-        content.classList.add('active');
-      }
+      if (content) content.classList.add('active');
     });
   });
 
-  // Setup scaling option updates
   const scalingSelect = getElement('scalingOption');
-  if (scalingSelect) {
-    scalingSelect.addEventListener('change', updateScalingOptions);
-  }
+  if (scalingSelect) scalingSelect.addEventListener('change', updateScalingOptions);
 
-  // Setup enter recipe manually button
   const enterRecipeBtn = getElement('enterRecipeManually');
   if (enterRecipeBtn) {
     enterRecipeBtn.addEventListener('click', () => {
@@ -1060,20 +991,14 @@ function initializeUI() {
     });
   }
 
+  const translateBtn = getElement('translateBtn');
+  if (translateBtn) {
+    translateBtn.addEventListener('click', translateIngredients);
+  }
+
   console.log('UI Controller: Ready');
 }
 
-// ============================================================================
-// AUTO-INITIALIZE ON DOM READY
-// ============================================================================
+document.addEventListener('DOMContentLoaded', initializeUI);
 
-// Modern approach
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeUI);
-} else {
-  // Page already loaded
-  initializeUI();
-}
-
-// Also expose initializeUI globally in case it's needed
 window.initializeUI = initializeUI;
