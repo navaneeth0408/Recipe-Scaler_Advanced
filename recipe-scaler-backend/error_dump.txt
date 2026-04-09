@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\DELL\OneDrive\Desktop\Recipe\recipe-scaler-backend\dump.py", line 3, in <module>
+    import app.routes.ai
+  File "C:\Users\DELL\OneDrive\Desktop\Recipe\recipe-scaler-backend\app\routes\ai.py", line 16, in <module>
+    from app.services.translation_service import translation_service, Language
+  File "C:\Users\DELL\OneDrive\Desktop\Recipe\recipe-scaler-backend\app\services\translation_service.py", line 10, in <module>
+    from deep_translator import GoogleTranslator
+ModuleNotFoundError: No module named 'deep_translator'

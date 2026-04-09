@@ -82,6 +82,42 @@ SUBSTITUTIONS = {
             "ratio_float": 1.0,
             "note": "Direct substitute, adds slight molasses flavor",
         }
+    ],
+    "ginger": [
+        {
+            "name": "ground ginger powder",
+            "ratio": "1/4",
+            "ratio_float": 0.25,
+            "note": "Use 1/4 tsp ground dried ginger per 1 tbsp fresh",
+        }
+    ],
+    "chilli": [
+        {
+            "name": "red chilli powder / cayenne pepper",
+            "ratio": "1/2",
+            "ratio_float": 0.5,
+            "note": "Dry powder is more concentrated than fresh chillies",
+        },
+        {
+            "name": "jalapenos or bell peppers",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "For fresh crunch without as much heat",
+        }
+    ],
+    "turmeric": [
+        {
+            "name": "curry powder",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Contains turmeric but adds other flavors",
+        },
+        {
+            "name": "saffron",
+            "ratio": "pinch",
+            "ratio_float": 0.1,
+            "note": "For color substitute (very expensive though)",
+        }
     ]
 }
 
@@ -212,7 +248,9 @@ class AISubstitutionService:
                 cat_match = "similar textured root or cruciferous vegetable"
             elif any(d in ingredient_lower for d in ["milk", "cream", "butter", "dairy", "yogurt"]):
                 cat_match = "dairy-free milk alternative (like almond/oat milk)"
-            elif any(s in ingredient_lower for s in ["pepper", "cumin", "salt", "sugar", "spice", "herb"]):
+            elif any(s in ingredient_lower for s in ["green chilli", "red chilli", "chili", "jalapeno", "pepper", "paprika"]):
+                cat_match = "another mild or hot pepper/spice"
+            elif any(s in ingredient_lower for s in ["cumin", "salt", "sugar", "spice", "herb", "coriander", "turmeric", "masala"]):
                 cat_match = "another earth-toned spice or herb"
 
             return [

@@ -21,10 +21,10 @@ from app.routes import ingredient_substitutions
 try:
     from app.routes import ai
     AI_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     AI_AVAILABLE = False
     import logging
-    logging.warning("AI routes not available - missing ML dependencies (transformers, torch, spacy)")
+    logging.warning(f"AI routes not available - ImportError: {e}. Please ensure all ML dependencies from requirements.txt are installed.")
 
 # Configure logging
 logging.basicConfig(

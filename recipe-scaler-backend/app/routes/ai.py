@@ -10,10 +10,10 @@ import logging
 import uuid
 
 from app.services.ai_ingredient_service import ai_ingredient_service
-from app.services.ai_substitution_service import ai_substitution_service, DietaryPreference, Cuisine
+from app.services.ai_substitution_service import ai_substitution_service
 from app.services.nutrition_service import nutrition_service
 from app.services.chat_service import cooking_assistant
-from app.services.translation_service import translation_service, Language
+from app.services.translation_service import translation_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai", tags=["ai"])
@@ -136,8 +136,6 @@ async def suggest_substitutions(request: SubstituteRequest):
             ingredient=request.ingredient,
             quantity=request.quantity,
             unit=request.unit,
-            dietary_preference=request.dietary_preference,
-            cuisine=request.cuisine,
             available_ingredients=request.available_ingredients
         )
         

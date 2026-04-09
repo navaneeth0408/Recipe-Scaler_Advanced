@@ -513,11 +513,13 @@ async def extract_audio_ingredients(
         
         transcript = None
         video_title = None
+        detected_lang = None
         
         if cached_transcript:
             logger.info(f"[AUDIO_EXTRACTION] Using cached transcript for video: {video_id}")
             transcript = cached_transcript.transcript
             video_title = cached_transcript.title
+            detected_lang = cached_transcript.language
         else:
             # Get video metadata first
             logger.info(f"[AUDIO_EXTRACTION] Fetching video metadata for: {video_id}")
@@ -529,31 +531,44 @@ async def extract_audio_ingredients(
                 logger.warning(f"[AUDIO_EXTRACTION] Could not fetch metadata: {str(e)}")
                 video_title = "Unknown"
             
-            # Download audio from YouTube
-            logger.info(f"[AUDIO_EXTRACTION] Downloading audio from YouTube video: {video_id}")
-            try:
-                audio_path = AudioService.download_youtube_audio(youtube_url)
-                logger.info("Audio downloaded")
-                logger.info(f"[AUDIO_EXTRACTION] Audio downloaded to: {audio_path}")
-            except Exception as e:
-                logger.error(f"[AUDIO_EXTRACTION] Audio download failed: {str(e)}")
-                return {"error": "Audio extraction failed", "details": f"Failed to download video audio: {str(e)}"}
+            # Attempt subtitle-first logic
+            logger.info("[AUDIO_EXTRACTION] Checking for native Malayalam subtitles...")
+            transcript = AudioService.extract_subtitles(youtube_url, langs=['ml'])
             
-            # Transcribe audio using Whisper
-            logger.info("Transcription started")
-            logger.info(f"[AUDIO_EXTRACTION] Starting speech-to-text transcription")
-            try:
-                transcript = SpeechService.transcribe_audio(audio_path)
-                logger.info(f"Transcript length: {len(transcript)}")
-                logger.info(f"[AUDIO_EXTRACTION] Transcription completed, {len(transcript)} characters")
-            except Exception as e:
-                logger.error(f"[AUDIO_EXTRACTION] Transcription failed: {str(e)}")
-                # Clean up audio file
-                AudioService.cleanup_audio_file(audio_path)
-                return {"error": "Audio extraction failed", "details": f"Unable to transcribe video audio: {str(e)}"}
-            finally:
-                # Clean up audio file
-                AudioService.cleanup_audio_file(audio_path)
+            if transcript:
+                logger.info("[AUDIO_EXTRACTION] Found subtitle track natively! Skipping full audio download.")
+                detected_lang = Language.MALAYALAM.value
+            else:
+                logger.info("[AUDIO_EXTRACTION] No subtitles found, proceeding to audio extraction.")
+                # Download audio from YouTube
+                logger.info(f"[AUDIO_EXTRACTION] Downloading audio from YouTube video: {video_id}")
+                try:
+                    audio_path = AudioService.download_youtube_audio(youtube_url)
+                    logger.info("Audio downloaded")
+                    logger.info(f"[AUDIO_EXTRACTION] Audio downloaded to: {audio_path}")
+                except Exception as e:
+                    logger.error(f"[AUDIO_EXTRACTION] Audio download failed: {str(e)}")
+                    return {"error": "Audio extraction failed", "details": f"Failed to download video audio: {str(e)}"}
+                
+                logger.info("[AUDIO_EXTRACTION] Detecting language from audio...")
+                detected_lang = SpeechService.detect_language_from_audio(audio_path)
+                logger.info(f"[AUDIO_EXTRACTION] Detected language from audio: {detected_lang}")
+                
+                # Transcribe audio using Whisper
+                logger.info("Transcription started")
+                logger.info(f"[AUDIO_EXTRACTION] Starting speech-to-text transcription with lang={detected_lang}")
+                try:
+                    transcript = SpeechService.transcribe_audio(audio_path, language=detected_lang)
+                    logger.info(f"Transcript length: {len(transcript)}")
+                    logger.info(f"[AUDIO_EXTRACTION] Transcription completed, {len(transcript)} characters")
+                except Exception as e:
+                    logger.error(f"[AUDIO_EXTRACTION] Transcription failed: {str(e)}")
+                    # Clean up audio file
+                    AudioService.cleanup_audio_file(audio_path)
+                    return {"error": "Audio extraction failed", "details": f"Unable to transcribe video audio: {str(e)}"}
+                finally:
+                    # Clean up audio file
+                    AudioService.cleanup_audio_file(audio_path)
             
             # Cache the transcript
             logger.info(f"[AUDIO_EXTRACTION] Caching transcript for video: {video_id}")
@@ -565,7 +580,7 @@ async def extract_audio_ingredients(
                     title=video_title,
                     transcript=transcript,
                     extraction_method="audio",
-                    language="en"
+                    language=detected_lang
                 )
                 db.add(transcript_cache)
                 db.commit()
@@ -581,7 +596,13 @@ async def extract_audio_ingredients(
         
         # Filter transcript for ingredient-related sentences
         logger.info(f"[AUDIO_EXTRACTION] Filtering transcript for ingredient-related content")
-        filtered_transcript = filter_ingredient_sentences(transcript)
+        
+        # If language is unknown at this point (uncached legacy), try predicting it
+        if not detected_lang:
+            detected_lang = translation_service.detect_language(transcript)
+
+        # Filter and translate (if 'ml') inside the filter service
+        filtered_transcript = filter_ingredient_sentences(transcript, language=detected_lang)
         
         if not filtered_transcript:
             logger.warning(f"[AUDIO_EXTRACTION] No ingredient-related content found in transcript")
@@ -596,10 +617,9 @@ async def extract_audio_ingredients(
             return response.dict()
 
         # ------------------------------------------------------------------
-        # Language detection & Malayalam → English translation for parsing
+        # Language handling for downstream parsing
         # ------------------------------------------------------------------
-        detected_lang = translation_service.detect_language(filtered_transcript)
-        logger.info(f"[AUDIO_EXTRACTION] Detected transcript language: {detected_lang}")
+        logger.info(f"[AUDIO_EXTRACTION] Extracted language downstream: {detected_lang}")
 
         if detected_lang not in (Language.ENGLISH.value, Language.MALAYALAM.value):
             logger.info(
@@ -616,16 +636,8 @@ async def extract_audio_ingredients(
             )
             return response.dict()
 
+        # Since filter_ingredient_sentences translates Malayalam to English, text_for_extraction is already in English
         text_for_extraction = filtered_transcript
-        if detected_lang == Language.MALAYALAM.value:
-            logger.info("[AUDIO_EXTRACTION] Translating Malayalam transcript to English for parsing")
-            translated = translation_service.translate_text(
-                filtered_transcript,
-                source_lang=Language.MALAYALAM.value,
-                target_lang=Language.ENGLISH.value,
-            )
-            if translated:
-                text_for_extraction = translated
         
         # Extract ingredients from (possibly translated) filtered transcript
         logger.info("Parsing ingredients from transcript")

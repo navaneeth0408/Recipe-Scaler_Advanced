@@ -68,7 +68,8 @@ class AudioService:
 
             # yt-dlp options for downloading best audio only
             ydl_opts = {
-                'format': 'bestaudio[ext=m4a]/bestaudio/best',  # Download best audio in m4a format
+                # Prioritize webm to avoid FixupM4a post-processor which causes [WinError 5] on Windows
+                'format': 'bestaudio[ext=webm]/bestaudio/best', 
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'wav',  # Convert to WAV for Whisper
@@ -82,6 +83,8 @@ class AudioService:
                 'quiet': False,
                 'no_warnings': False,
                 'socket_timeout': 30,
+                'extractor_retries': 3,
+                'sleep_interval_requests': 1,
             }
 
             logger.debug(f"yt-dlp options: {ydl_opts}")
@@ -166,3 +169,89 @@ class AudioService:
         except Exception as e:
             logger.error(f"Failed to cleanup temp directory: {str(e)}")
             return 0
+
+    @staticmethod
+    def extract_subtitles(video_url: str, langs: Optional[list] = None) -> Optional[str]:
+        """
+        Extract subtitles directly using yt-dlp without downloading full audio.
+        Optimized for speed.
+        
+        Args:
+            video_url: URL to the YouTube video
+            langs: List of language codes to attempt (e.g. ['ml', 'en'])
+            
+        Returns:
+            Concatenated subtitle text, or None if no matching subtitles exist.
+        """
+        if yt_dlp is None:
+            return None
+            
+        if langs is None:
+            langs = ['ml']
+            
+        try:
+            import time
+            import re
+            from app.services.youtube_service import YouTubeService
+            
+            AudioService.ensure_temp_dir()
+            video_id = YouTubeService.extract_video_id(video_url) or "subtitle"
+            timestamp = int(time.time())
+            filename = f"{video_id}_{timestamp}_sub"
+            
+            ydl_opts = {
+                'skip_download': True,      # Do not download video/audio
+                'writesubtitles': True,     # Download manual subtitles
+                'writeautomaticsub': True,  # Fallback to auto-generated
+                'subtitleslangs': langs,    # Try to fetch these languages
+                'subtitlesformat': 'vtt',
+                'outtmpl': str(AudioService.TEMP_DIR / f"{filename}.%(ext)s"),
+                'quiet': True,
+                'no_warnings': True,
+                'extractor_retries': 3,
+                'sleep_interval_requests': 1,
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                logger.info(f"Attempting to download subtitles for languages: {langs}")
+                ydl.extract_info(video_url, download=True)
+                
+            # Find the downloaded .vtt file (name varies slightly depending on lang and auto vs manual)
+            possible_files = list(AudioService.TEMP_DIR.glob(f"{filename}*.vtt"))
+            if not possible_files:
+                logger.info(f"No .vtt subtitles found for {video_id} in languages: {langs}")
+                return None
+                
+            sub_file = possible_files[0]
+            logger.info(f"Found subtitle file: {sub_file.name}")
+            
+            with open(sub_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+            AudioService.cleanup_audio_file(str(sub_file))
+            
+            # Simple VTT parser: strip timestamps, HTML/WEBVTT tags, and empty lines
+            text_lines = []
+            for line in content.split('\n'):
+                line = line.strip()
+                if not line or line == 'WEBVTT' or '-->' in line or line.startswith('Kind:') or line.startswith('Language:'):
+                    continue
+                # Remove tags like <c>
+                clean_line = re.sub(r'<[^>]+>', '', line)
+                if clean_line:
+                    text_lines.append(clean_line)
+                    
+            full_text = " ".join(text_lines)
+            
+            # Deduplicate repeated words (common in auto-generated captions)
+            words = full_text.split()
+            dedup_words = []
+            for w in words:
+                if not dedup_words or dedup_words[-1] != w:
+                    dedup_words.append(w)
+                    
+            return " ".join(dedup_words) if dedup_words else full_text
+            
+        except Exception as e:
+            logger.warning(f"Failed to extract subtitles via yt-dlp: {str(e)}")
+            return None

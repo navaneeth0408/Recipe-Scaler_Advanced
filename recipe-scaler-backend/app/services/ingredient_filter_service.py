@@ -90,24 +90,42 @@ STRICT_FOOD_WHITELIST = [
 STRICT_FOOD_WHITELIST.sort(key=len, reverse=True)
 
 
-def filter_ingredient_sentences(transcript: str) -> str:
+def filter_ingredient_sentences(transcript: str, language: str = "en") -> str:
     """
     Filter transcript to extract only ingredient-related sentences
     using the strict food whitelist.
     
     Args:
         transcript: Full transcribed text from video
+        language: The language of the transcript (e.g., 'en', 'ml')
         
     Returns:
-        Filtered text containing only sentences with whitelist food keywords
+        Filtered text containing only sentences with whitelist food keywords.
+        If language was 'ml', returns the translated English text.
     """
     if not transcript or not isinstance(transcript, str):
         logger.warning("Invalid transcript provided")
         return ""
 
     try:
+        # Dual-path filtering: if Malayalam, translate entirely first so the English whitelist works
+        if language == "ml":
+            logger.info("Malayalam transcript detected. Translating to English before filtering.")
+            from app.services.translation_service import translation_service, Language
+            transcript_to_filter = translation_service.translate_text(
+                transcript,
+                source_lang=Language.MALAYALAM.value,
+                target_lang=Language.ENGLISH.value
+            )
+            # If translation returns empty for some reason, fallback to original
+            if not transcript_to_filter:
+                logger.warning("Translation failed. Falling back to original transcript.")
+                transcript_to_filter = transcript
+        else:
+            transcript_to_filter = transcript
+
         # Split into sentences using punctuation and newlines
-        sentences = [s.strip() for s in re.split(r'[.!?\n]+', transcript) if s.strip()]
+        sentences = [s.strip() for s in re.split(r'[.!?\n]+', transcript_to_filter) if s.strip()]
         
         filtered_sentences = []
         

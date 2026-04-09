@@ -72,6 +72,7 @@ const ingredientMap = {
   "tomato": "തക്കാളി",
   "onion": "സവാള",
   "green chilli": "പച്ചമുളക്",
+  "green chillies": "പച്ചമുളക്",
   "chilli": "മുളക്",
   "capsicum": "കാപ്സിക്കം",
   "carrot": "കാരറ്റ്",
@@ -80,12 +81,15 @@ const ingredientMap = {
   "garlic": "വെളുത്തുള്ളി",
   "curry leaves": "കരിവേപ്പില",
   "coriander leaves": "മല്ലിയില",
+  "coriander": "മല്ലി",
   "turmeric": "മഞ്ഞൾ",
   "salt": "ഉപ്പ്",
   "sugar": "പഞ്ചസാര",
   "oil": "എണ്ണ",
+  "ghee": "നെയ്യ്",
   "mustard seeds": "കടുക്",
   "cumin seeds": "ജീരകം",
+  "cumin": "ജീരകം",
   "pepper": "കുരുമുളക്",
   "green pepper": "പച്ച കാപ്സിക്കം",
   "red pepper": "ചുവപ്പ് കാപ്സിക്കം",
@@ -93,7 +97,33 @@ const ingredientMap = {
   "mozzarella": "മൊസറെല്ല",
   "butter": "വെണ്ണ",
   "milk": "പാൽ",
-  "flour": "മാവ്"
+  "curd": "തൈര്",
+  "flour": "മാവ്",
+  "rice": "അരി",
+  "chicken": "ചിക്കൻ",
+  "tomatoes": "തക്കാളി",
+  "potatoes": "ഉരുളക്കിഴങ്ങ്",
+  "onions": "സവാള",
+  "carrots": "കാരറ്റ്",
+  "green bell pepper": "പച്ച കാപ്സിക്കം",
+  "red bell pepper": "ചുവപ്പ് കാപ്സിക്കം",
+  "egg": "മുട്ട",
+  "eggs": "മുട്ട",
+  "curry powder": "കറി പൗഡർ",
+  "seasoning cube": "സീസണിംഗ് ക്യൂബ്",
+  "all purpose": "ഓൾ പർപ്പസ്",
+  "instant": "ഇൻസ്റ്റന്റ്",
+  "yeast": "യീസ്റ്റ്",
+  "breast": "ബ്രെസ്റ്റ്",
+  "breasts": "ബ്രെസ്റ്റ്",
+  "mozarella": "മൊസറെല്ല",
+  "sausage": "സോസേജ്",
+  "bacon": "ബേക്കൺ",
+  "scotch bonnet": "സ്കോച്ച് ബോണറ്റ്",
+  "bonnet": "ബോണറ്റ്",
+  "peppers": "പെപ്പേഴ്സ്",
+  "rose water": "റോസ് വാട്ടർ",
+  "rose": "റോസ്"
 };
 
 const reverseMap = Object.fromEntries(
@@ -111,14 +141,23 @@ const unitMap = {
   "tsp": "ടീസ്പൂൺ",
   "gram": "ഗ്രാം",
   "grams": "ഗ്രാം",
+  "kilogram": "കിലോ",
+  "kilograms": "കിലോ",
   "kg": "കിലോ",
+  "milliliter": "മില്ലി",
+  "milliliters": "മില്ലി",
   "ml": "മില്ലി",
   "liter": "ലിറ്റർ",
+  "liters": "ലിറ്റർ",
   "litre": "ലിറ്റർ",
   "piece": "കഷണം",
   "pieces": "കഷണങ്ങൾ",
   "slice": "സ്ലൈസ്",
-  "slices": "സ്ലൈസ്"
+  "slices": "സ്ലൈസ്",
+  "table spoon": "ടേബിൾസ്പൂൺ",
+  "table spoons": "ടേബിൾസ്പൂൺ",
+  "sprinkle of": "കുറച്ച്",
+  "sprinkle": "കുറച്ച്"
 };
 
 const reverseUnitMap = Object.fromEntries(
@@ -137,7 +176,8 @@ const descriptorMap = {
   "large": "വലിയ",
   "small": "ചെറിയ",
   "to": "",
-  "taste": "രുചിക്ക്"
+  "taste": "രുചിക്ക്",
+  "bulb": ""
 };
 
 const reverseDescriptorMap = Object.fromEntries(
@@ -149,7 +189,7 @@ function isMalayalam(word) {
 }
 
 function isNumber(word) {
-  return /^[0-9\/\.]+$/.test(word);
+  return /^[0-9\/\.\-]+$/.test(word);
 }
 
 function transliterate(word) {
@@ -189,7 +229,20 @@ function processTranslation(text, selectedLang) {
   }
 
   // To Malayalam Strict Pipeline
-  return text.split(" ").map(word => {
+  let processedText = text.trim();
+
+  // Pre-process multi-word phrases safely for all maps
+  const allMaps = { ...descriptorMap, ...unitMap, ...ingredientMap };
+  const sortedKeys = Object.keys(allMaps).sort((a, b) => b.length - a.length);
+  sortedKeys.forEach(key => {
+    if (key.includes(' ')) {
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escapedKey}\\b`, 'gi');
+      processedText = processedText.replace(regex, allMaps[key]);
+    }
+  });
+
+  return processedText.split(" ").map(word => {
     let clean = word.toLowerCase().replace(/[.,]/g, '');
 
     if (isMalayalam(word)) return word;
@@ -236,10 +289,23 @@ function translateIngredients() {
 // ============================================================================
 
 function renderIngredientsList(ingredients, containerId = 'ingredientsList', isTranslation = false) {
-  window.currentIngredients = ingredients;
+  const uniqueMap = new Map();
+  (ingredients || []).forEach(ing => {
+    const normName = (ing.name || '').toLowerCase().trim();
+    const normUnit = (ing.unit || '').toLowerCase().trim();
+    const key = `${normName}|${normUnit}`;
+    // Keep first occurrence of identical name and unit
+    if (!uniqueMap.has(key)) {
+      uniqueMap.set(key, { ...ing });
+    }
+  });
+
+  const dedupIngredients = Array.from(uniqueMap.values());
+  ingredients = dedupIngredients;
+  window.currentIngredients = dedupIngredients;
 
   if (!isTranslation) {
-    originalIngredients = JSON.parse(JSON.stringify(ingredients || []));
+    originalIngredients = JSON.parse(JSON.stringify(dedupIngredients || []));
     const malayalamRegex = /[\u0D00-\u0D7F]/;
     const isMalayalam = originalIngredients.some(ing => malayalamRegex.test(ing.name || ''));
     sourceLanguage = isMalayalam ? "malayalam" : "english";
@@ -768,44 +834,20 @@ window.scaleRecipe = async function () {
       // Each item is { name, quantity, unit, ... } — format directly.
       // Each item might have the original quantity inside `ing.name` and the scale factor in `ing.quantity`
       const scaledIngredients = response.ingredients.map(ing => {
-        const scaleFactor = ing.quantity || 1;
+        const qty = ing.quantity || 1;
+        const unit = (ing.unit || '').trim();
         const originalName = (ing.name || '').trim();
 
-        // Extract numeric quantity from the beginning of the name
-        const regex = /^((?:\d+\s+)?\d+\/\d+|\d+(?:\.\d+)?)\s*(.*)$/;
-        const match = originalName.match(regex);
+        const formattedQty = formatNiceQuantity(qty);
+        const isWhole = unit.toLowerCase() === 'whole';
 
-        if (match) {
-          const qtyStr = match[1].trim();
-          const restOfIngredient = match[2].trim();
-
-          // Convert fractions to decimals
-          let numericQty = 0;
-          if (qtyStr.includes(' ') && qtyStr.includes('/')) {
-            const parts = qtyStr.split(' ');
-            const whole = parseFloat(parts[0]);
-            const fracParts = parts[1].split('/');
-            numericQty = whole + (parseFloat(fracParts[0]) / parseFloat(fracParts[1]));
-          } else if (qtyStr.includes('/')) {
-            const fracParts = qtyStr.split('/');
-            numericQty = parseFloat(fracParts[0]) / parseFloat(fracParts[1]);
-          } else {
-            numericQty = parseFloat(qtyStr);
-          }
-
-          // Multiply original quantity by scale factor
-          const scaledQty = numericQty * scaleFactor;
-
-          // Format back into a readable quantity using existing helper
-          const rounded = parseFloat(scaledQty.toFixed(4).replace(/\.?0+$/, ''));
-          const formattedQty = formatNiceQuantity(rounded);
-
-          // Rebuild ingredient string
-          return `${formattedQty} ${restOfIngredient}`;
+        if (isWhole) {
+          // If it's just '1 whole chicken', maybe we just say '1 chicken' or 'chicken' based on convention,
+          // but the previous rule was:
+          return qty === 1 ? originalName : `${formattedQty} ${originalName}`.trim();
+        } else {
+          return `${formattedQty} ${unit} ${originalName}`.replace(/\s+/g, ' ').trim();
         }
-
-        // Output raw ingredient if no numbers found
-        return originalName;
       });
 
       console.log('[scaleRecipe] formatted strings going to sessionStorage:', scaledIngredients.slice(0, 4));
