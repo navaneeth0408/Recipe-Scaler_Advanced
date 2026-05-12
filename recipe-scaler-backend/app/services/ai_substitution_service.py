@@ -4,6 +4,7 @@ Suggests alternatives based on availability, categories, and practical cooking r
 """
 
 import logging
+import difflib
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
@@ -118,6 +119,128 @@ SUBSTITUTIONS = {
             "ratio_float": 0.1,
             "note": "For color substitute (very expensive though)",
         }
+    ],
+    "paneer": [
+        {
+            "name": "firm tofu",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Excellent dairy-free and vegan alternative"
+        },
+        {
+            "name": "halloumi",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Similar grilling and non-melting texture"
+        }
+    ],
+    "coconut milk": [
+        {
+            "name": "almond milk",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Much thinner, mild flavor"
+        },
+        {
+            "name": "heavy cream + water",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Dairy alternative with similar richness"
+        }
+    ],
+    "coriander powder": [
+        {
+            "name": "cumin powder",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Different flavor profile but works well in curries"
+        },
+        {
+            "name": "garam masala",
+            "ratio": "1:2",
+            "ratio_float": 0.5,
+            "note": "Use half as it's much stronger"
+        }
+    ],
+    "ghee": [
+        {
+            "name": "butter",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Clarified butter (ghee) is just butter with milk solids removed"
+        },
+        {
+            "name": "vegetable oil",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Any neutral oil works for high-heat cooking"
+        }
+    ],
+    "lemon": [
+        {
+            "name": "lime",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Direct citrus replacement"
+        },
+        {
+            "name": "white vinegar",
+            "ratio": "1/2",
+            "ratio_float": 0.5,
+            "note": "For acidity without the citrus flavor"
+        }
+    ],
+    "meat masala": [
+        {
+            "name": "garam masala + 1 tsp chilli powder",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Replicates the spice blend's profile"
+        },
+        {
+            "name": "curry powder",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "General all-purpose Indian spice blend"
+        }
+    ],
+    "curry leaves": [
+        {
+            "name": "bay leaf",
+            "ratio": "2:1",
+            "ratio_float": 2.0,
+            "note": "Similar herbal undertones but lacks the distinct aroma"
+        }
+    ],
+    "mustard seeds": [
+        {
+            "name": "cumin seeds",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "For tempering (tadka), though flavor is different"
+        }
+    ],
+    "rice": [
+        {
+            "name": "cauliflower rice",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Low-carb alternative"
+        },
+        {
+            "name": "quinoa",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Similar texture and protein-rich"
+        }
+    ],
+    "flour": [
+        {
+            "name": "whole wheat flour",
+            "ratio": "1:1",
+            "ratio_float": 1.0,
+            "note": "Healthier alternative, may need more liquid"
+        }
     ]
 }
 
@@ -126,6 +249,21 @@ class AISubstitutionService:
     
     def __init__(self):
         self.substitutions = SUBSTITUTIONS
+        self.dataset_substitutions = {}
+        self._load_dataset_subs()
+
+    def _load_dataset_subs(self):
+        """Load the pre-processed Kaggle substitution dataset if available."""
+        import os
+        import json
+        try:
+            data_file = os.path.join(os.path.dirname(__file__), "..", "data", "dataset_substitutions.json")
+            if os.path.exists(data_file):
+                with open(data_file, 'r') as f:
+                    self.dataset_substitutions = json.load(f)
+                logger.info(f"Loaded {len(self.dataset_substitutions)} ingredients from Kaggle dataset.")
+        except Exception as e:
+            logger.error(f"Failed to load substitution dataset: {e}")
     
     def suggest_substitutions(
         self,
@@ -135,8 +273,72 @@ class AISubstitutionService:
         available_ingredients: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Suggest ingredient substitutions based on AI model (Groq/OpenAI), fallback to local DB.
+        Suggest ingredient substitutions based on AI model (Groq/OpenAI), fallback to local DB and Kaggle dataset.
         """
+        ingredient_lower = ingredient.lower().strip()
+        
+        # 1. Check local manual database first (high confidence)
+        matches = []
+        if ingredient_lower in self.substitutions:
+            for sub in self.substitutions[ingredient_lower]:
+                matches.append({
+                    "name": sub["name"],
+                    "ratio": f"use {sub.get('ratio', '1:1')}",
+                    "note": sub.get("note", "Standard substitute")
+                })
+
+        # 2. Check Kaggle Dataset (broader knowledge)
+        if len(matches) < 2 and ingredient_lower in self.dataset_substitutions:
+            for sub_name in self.dataset_substitutions[ingredient_lower]:
+                # Avoid duplicates
+                if any(m['name'].lower() == sub_name.lower() for m in matches):
+                    continue
+                matches.append({
+                    "name": sub_name,
+                    "ratio": "use 1:1",
+                    "note": "Dataset-suggested alternative"
+                })
+                if len(matches) >= 3:
+                    break
+
+                if len(matches) >= 3:
+                    break
+
+        # 3. Fuzzy matching for local DB and Dataset
+        if len(matches) < 2:
+            # Check for close matches in local DB keys
+            close_matches = difflib.get_close_matches(ingredient_lower, self.substitutions.keys(), n=2, cutoff=0.55)
+            for cm in close_matches:
+                if cm == ingredient_lower: continue # Already checked
+                for sub in self.substitutions[cm]:
+                    if any(m['name'].lower() == sub['name'].lower() for m in matches): continue
+                    matches.append({
+                        "name": sub["name"],
+                        "ratio": f"use {sub.get('ratio', '1:1')}",
+                        "note": f"Substitute for {cm} (similar to {ingredient})"
+                    })
+            
+            # Check for close matches in Dataset keys
+            if len(matches) < 3:
+                dataset_close = difflib.get_close_matches(ingredient_lower, self.dataset_substitutions.keys(), n=2, cutoff=0.6)
+                for dc in dataset_close:
+                    if dc == ingredient_lower: continue
+                    for sub_name in self.dataset_substitutions[dc]:
+                        if any(m['name'].lower() == sub_name.lower() for m in matches): continue
+                        matches.append({
+                            "name": sub_name,
+                            "ratio": "use 1:1",
+                            "note": f"Alternative for {dc}"
+                        })
+                        if len(matches) >= 3: break
+
+        if matches:
+            # Filter out self-substitution
+            filtered_matches = [m for m in matches if m["name"].lower() != ingredient_lower]
+            if filtered_matches:
+                return filtered_matches[:3]
+
+        # 3. Fallback to AI then rule-based logic
         import os
         import json
         import requests
@@ -207,7 +409,12 @@ class AISubstitutionService:
                 end = clean_text.rfind(']') + 1
                 if start >= 0 and end > start:
                     try:
-                        return json.loads(clean_text[start:end])
+                        ai_subs = json.loads(clean_text[start:end])
+                        # Filter out self-substitution from AI results
+                        filtered_ai = [s for s in ai_subs if s.get("name", "").lower() != ingredient_lower]
+                        if filtered_ai:
+                            return filtered_ai
+                        # If AI only returned self-substitution, fall back
                     except json.JSONDecodeError as json_err:
                         logger.error(f"JSON parsing failed. Error: {json_err}. Clean Text: {clean_text}")
 
@@ -240,18 +447,25 @@ class AISubstitutionService:
         # 2. Category-based dynamic fallback
         if not matches:
             cat_match = "generic pantry staple"
-            if any(c in ingredient_lower for c in ["cheese", "cheddar", "mozzarella", "parmesan", "brie", "gouda"]):
+            if any(s in ingredient_lower for s in ["cumin", "salt", "sugar", "spice", "herb", "coriander", "turmeric", "masala", "powder"]):
+                cat_match = "another compatible spice or spice blend"
+            elif any(d in ingredient_lower for d in ["milk", "cream", "butter", "dairy", "yogurt", "ghee"]):
+                cat_match = "another fat or dairy alternative (like oil or plant milk)"
+            elif any(c in ingredient_lower for c in ["cheese", "cheddar", "mozzarella", "parmesan", "brie", "gouda"]):
                 cat_match = "mild melting or grating cheese"
             elif any(m in ingredient_lower for m in ["chicken", "beef", "pork", "meat", "lamb", "turkey"]):
+                # Ensure it's not a masala/spice match first
                 cat_match = "tofu, beans, or another mild protein"
             elif any(v in ingredient_lower for v in ["carrot", "onion", "broccoli", "potato", "vegetable"]):
                 cat_match = "similar textured root or cruciferous vegetable"
-            elif any(d in ingredient_lower for d in ["milk", "cream", "butter", "dairy", "yogurt"]):
-                cat_match = "dairy-free milk alternative (like almond/oat milk)"
             elif any(s in ingredient_lower for s in ["green chilli", "red chilli", "chili", "jalapeno", "pepper", "paprika"]):
                 cat_match = "another mild or hot pepper/spice"
-            elif any(s in ingredient_lower for s in ["cumin", "salt", "sugar", "spice", "herb", "coriander", "turmeric", "masala"]):
-                cat_match = "another earth-toned spice or herb"
+            elif any(l in ingredient_lower for l in ["lemon", "lime", "citrus", "vinegar"]):
+                cat_match = "another acidic ingredient like lime or vinegar"
+            elif any(f in ingredient_lower for f in ["flour", "maida", "powder"]):
+                cat_match = "any all-purpose or whole wheat flour"
+            elif any(r in ingredient_lower for r in ["rice", "grain", "poha"]):
+                cat_match = "any available rice or cereal grain"
 
             return [
                 {
@@ -269,6 +483,8 @@ class AISubstitutionService:
         # Calculate adjusted quantities and map to new JSON format
         results = []
         for match in matches:
+            if match["name"].lower() == ingredient_lower:
+                continue
             ratio_str = match.get("ratio", "1:1")
             results.append({
                 "name": match["name"],

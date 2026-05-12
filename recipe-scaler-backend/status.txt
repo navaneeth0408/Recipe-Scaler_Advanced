@@ -1,0 +1,24 @@
+ M "recipe scaler/api-client.js"
+ M "recipe scaler/enter_recipe.html"
+ M "recipe scaler/index.html"
+ M "recipe scaler/styles.css"
+ M "recipe scaler/ui-controller.js"
+ M recipe-scaler-backend/app/recipe_scaler.db
+ M recipe-scaler-backend/app/routes/ingredients.py
+ M recipe-scaler-backend/app/services/ai_substitution_service.py
+ M recipe-scaler-backend/app/services/ingredient_service.py
+ M recipe-scaler-backend/app/services/translation_service.py
+ M recipe-scaler-backend/app/services/youtube_service.py
+?? "recipe scaler/extract.js"
+?? "recipe scaler/extracted_log.txt"
+?? "recipe scaler/git_log_script.txt"
+?? "recipe scaler/git_log_ui.txt"
+?? "recipe scaler/test_translation_ui.js"
+?? recipe-scaler-backend/diff_ing.txt
+?? recipe-scaler-backend/diff_ing_initial.txt
+?? recipe-scaler-backend/diff_initial.txt
+?? recipe-scaler-backend/diff_sub.txt
+?? recipe-scaler-backend/status.txt
+?? recipe-scaler-backend/temp/test_extraction.py
+?? recipe-scaler-backend/temp/test_substitution.py
+?? recipe-scaler-backend/temp/test_translation.py

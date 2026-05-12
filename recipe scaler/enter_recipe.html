@@ -40,17 +40,28 @@
       </div>
     </div>
 
-    <div class="scale-options">
-      <h2>Scaling Options</h2>
-      <div class="scale-controls">
+    <div class="scale-options" style="flex-direction: column;">
+      <h2 style="width: 100%; text-align: center; margin-bottom: 20px;">Scaling Options</h2>
+      
+      <div class="quick-scale-container" style="width: 100%; margin-bottom: 15px;">
+        <div class="quick-scale-chips">
+          <button class="scale-chip" onclick="setQuickScale(0.5, this)">½×</button>
+          <button class="scale-chip active" onclick="setQuickScale(1, this)">1×</button>
+          <button class="scale-chip" onclick="setQuickScale(2, this)">2×</button>
+          <button class="scale-chip" onclick="setQuickScale(3, this)">3×</button>
+          <button class="scale-chip" onclick="showCustomScale(this)">Custom</button>
+        </div>
+      </div>
+
+      <div class="scale-controls" id="custom-scale-controls" style="display: none; width: 100%; justify-content: center; flex-wrap: wrap;">
         <label for="scalingOption">Scale By:</label>
         <select id="scalingOption">
           <option value="servings">Servings</option>
           <option value="quantity">Quantity</option>
         </select>
-        <input type="number" id="scalingValue" value="1" min="1" />
+        <input type="number" id="scalingValue" value="1" min="0.1" step="0.1" />
+        <button onclick="scaleRecipe()" class="scale-btn" style="margin-top: 15px;">Scale Recipe</button>
       </div>
-      <button onclick="scaleRecipe()" class="scale-btn">Scale Recipe</button>
     </div>
 
     <div class="nav-buttons">
@@ -60,5 +71,24 @@
 
   <script src="script.js"></script>
   <script src="recipe-enhancements.js"></script>
+  <script>
+    window.setQuickScale = function(multiplier, btn) {
+      document.querySelectorAll('.scale-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      const customControls = document.getElementById('custom-scale-controls');
+      if(customControls) customControls.style.display = 'none';
+      
+      document.getElementById('scalingOption').value = 'servings';
+      document.getElementById('scalingValue').value = multiplier;
+      if (typeof scaleRecipe === 'function') scaleRecipe();
+    };
+    
+    window.showCustomScale = function(btn) {
+      document.querySelectorAll('.scale-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      const customControls = document.getElementById('custom-scale-controls');
+      if(customControls) customControls.style.display = 'flex';
+    };
+  </script>
 </body>
 </html>

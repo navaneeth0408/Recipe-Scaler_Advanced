@@ -48,6 +48,7 @@ def _recipe_db_to_model(recipe_db: RecipeDB) -> Recipe:
         instructions=recipe_db.instructions,
         created_at=recipe_db.created_at,
         updated_at=recipe_db.updated_at,
+        view_count=recipe_db.view_count,
     )
 
 
@@ -137,6 +138,15 @@ def get_recipe(
         if not recipe_db:
             raise HTTPException(status_code=404, detail="Recipe not found")
 
+        # Increment view count
+        try:
+            recipe_db.view_count = (recipe_db.view_count or 0) + 1
+            db.commit()
+            db.refresh(recipe_db)
+        except Exception as e:
+            logger.warning(f"Failed to increment view count for recipe {recipe_id}: {str(e)}")
+            db.rollback()
+
         return RecipeResponse(
             recipe=_recipe_db_to_model(recipe_db),
             success=True,
@@ -153,6 +163,8 @@ def get_recipe(
 def list_recipes(
     skip: int = 0,
     limit: int = 50,
+    query: str = None,
+    sort_by: str = "views",
     db: Session = Depends(get_db)
 ):
     """
@@ -163,8 +175,20 @@ def list_recipes(
     - limit: Maximum recipes to return (default 50)
     """
     try:
-        recipes_db = db.query(RecipeDB).offset(skip).limit(limit).all()
-        total = db.query(RecipeDB).count()
+        # Build query
+        db_query = db.query(RecipeDB)
+        
+        if query:
+            db_query = db_query.filter(RecipeDB.name.ilike(f"%{query}%"))
+            
+        # Apply sorting
+        if sort_by == "views":
+            db_query = db_query.order_by(RecipeDB.view_count.desc())
+        else:
+            db_query = db_query.order_by(RecipeDB.created_at.desc())
+            
+        recipes_db = db_query.offset(skip).limit(limit).all()
+        total = db.query(RecipeDB).count() if not query else db_query.count()
 
         return RecipesListResponse(
             recipes=[_recipe_db_to_model(r) for r in recipes_db],

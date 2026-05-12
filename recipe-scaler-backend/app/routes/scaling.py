@@ -51,25 +51,21 @@ def scale_ingredients(
 
         scaled_ingredients = []
         for ing in request.ingredients:
-            # Parse the raw quantity string from the ingredient display text if needed.
-            # The ingredient object may have quantity as a float already, or as a
-            # string like "1/3" (from display text parsed by the frontend).
-            raw_qty = ing.quantity
-            try:
-                qty = ScalingService.parse_fraction(raw_qty)
-            except Exception:
-                qty = 1.0
-
-            new_qty = qty * scale_factor
-            new_qty_rounded = ScalingService._round_quantity(new_qty)
-
+            # Use the centralized scale_ingredient method which handles vague quantities
+            ing_dict = ing.dict()
+            scaled_dict = ScalingService.scale_ingredient(
+                ing_dict,
+                orig,
+                targ
+            )
+            
             scaled_ingredients.append(
                 Ingredient(
-                    name=ing.name,
-                    quantity=new_qty_rounded,
-                    unit=ing.unit or "",
-                    original_quantity=qty,
-                    original_unit=ing.unit or "",
+                    name=scaled_dict['name'],
+                    quantity=scaled_dict['quantity'],
+                    unit=scaled_dict['unit'] or "",
+                    original_quantity=scaled_dict.get('original_quantity'),
+                    original_unit=scaled_dict.get('original_unit') or "",
                     notes=ing.notes,
                 )
             )

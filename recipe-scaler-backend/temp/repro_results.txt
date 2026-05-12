@@ -1,0 +1,4 @@
+Scenario 1 (string '1'): {'name': 'salt', 'quantity': 2.0, 'unit': '', 'original_quantity': '1', 'original_unit': ''}
+Scenario 2 (float 1.0): {'name': 'salt', 'quantity': 2.0, 'unit': '', 'original_quantity': 1.0, 'original_unit': ''}
+Scenario 3 (string 'sprinkle'): {'name': 'salt', 'quantity': 'sprinkle', 'unit': '', 'original_quantity': 'sprinkle', 'original_unit': ''}
+Scenario 4 (quantity '1 salt'): {'name': 'salt', 'quantity': 2.0, 'unit': '', 'original_quantity': '1 salt', 'original_unit': ''}

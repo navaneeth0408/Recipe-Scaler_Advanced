@@ -1,0 +1,106 @@
+﻿Total unique ingredients found in dataset: 5024
+Number of ingredients not in current whitelist: 4884
+
+Most frequent missing ingredients:
+sunflower oil: 2074
+turmeric powder: 2031
+cloves garlic: 1536
+coriander (dhania) leaves: 1379
+cumin seeds (jeera): 1244
+asafoetida (hing): 833
+garam masala powder: 781
+coconut: 761
+black pepper powder: 755
+cumin powder (jeera): 629
+virgin olive oil: 629
+dry red chillies: 616
+cinnamon stick (dalchini): 497
+flour (maida): 485
+potato (aloo): 458
+wheat flour: 454
+cloves (laung): 413
+cardamom (elaichi) podsseeds: 413
+jaggery: 408
+white urad dal (split): 348
+mint leaves (pudina): 344
+bay leaf (tej patta): 315
+fennel seeds (saunf): 310
+coriander (dhania) seeds: 303
+gram flour (besan): 302
+cardamom powder (elaichi): 301
+green bell pepper (capsicum): 294
+methi seeds (fenugreek seeds): 273
+chana dal (bengal gram dal): 272
+red chilli flakes: 264
+ajwain (carom seeds): 229
+green peas (matar): 228
+mustard oil: 227
+chaat masala powder: 214
+dried oregano: 211
+red bell pepper (capsicum): 211
+peanuts (moongphali): 210
+amchur (dry mango powder): 204
+sesame seeds (til seeds): 202
+badam (almond): 197
+corn flour: 181
+cinnamon powder (dalchini): 178
+button mushrooms: 177
+saffron strands: 161
+arhar dal (split toor dal): 160
+coconut oil: 159
+green beans (french beans): 152
+basil leaves: 152
+sesame (gingelly) oil: 148
+caster sugar: 146
+
+Most frequent units in dataset:
+teaspoon: 16487
+cup: 10944
+tablespoon: 6092
+tablespoons: 3294
+grams: 2187
+Green: 2176
+inch: 1842
+cups: 1803
+cloves: 1620
+Onion: 1612
+teaspoons: 1565
+sprig: 1513
+Dry: 893
+Whole: 761
+Tomato: 517
+Tomatoes: 480
+pinch: 469
+tsp: 456
+Cardamom: 428
+Cloves: 424
+Bay: 423
+Onions: 367
+Potatoes: 305
+Carrot: 277
+Lemon: 261
+Red: 261
+to: 225
+Curry: 214
+green: 195
+ml: 184
+Potato: 158
+Cashew: 140
+Black: 134
+hours: 134
+tbsp: 128
+Carrots: 127
+minutes: 110
+onion: 107
+Mango: 99
+Cup: 99
+Garlic: 95
+Tablespoon: 93
+Ripe: 88
+Star: 87
+Cinnamon: 85
+Cucumber: 83
+liter: 82
+Fresh: 80
+kg: 79
+Yellow: 79

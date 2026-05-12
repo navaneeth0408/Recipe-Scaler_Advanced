@@ -1,0 +1,103 @@
+﻿Total unique ingredients found in global dataset: 6714
+
+Most frequent missing global ingredients:
+garlic cloves: 6237
+ground black pepper: 4785
+kosher salt: 3113
+green onions: 3078
+large eggs: 2948
+carrots: 2814
+unsalted butter: 2782
+ground cumin: 2747
+extra-virgin olive oil: 2747
+purple onion: 1896
+scallions: 1891
+grated parmesan cheese: 1886
+corn starch: 1757
+jalapeno chilies: 1730
+dried oregano: 1707
+chopped cilantro fresh: 1698
+fresh lemon juice: 1679
+diced tomatoes: 1624
+fresh parsley: 1604
+minced garlic: 1583
+chicken broth: 1554
+cayenne pepper: 1523
+fresh ginger: 1503
+brown sugar: 1503
+cooking spray: 1490
+shallots: 1477
+lemon juice: 1395
+fresh lime juice: 1368
+chopped onion: 1251
+fish sauce: 1247
+ground cinnamon: 1231
+avocado: 1229
+canola oil: 1223
+dry white wine: 1218
+rice vinegar: 1204
+yellow onion: 1184
+cilantro leaves: 1160
+cilantro: 1142
+fresh basil: 1137
+boneless skinless chicken breasts: 1111
+flat leaf parsley: 1094
+white sugar: 1093
+lime juice: 1072
+potatoes: 1018
+corn tortillas: 965
+salsa: 963
+freshly ground pepper: 949
+ground turmeric: 949
+sea salt: 940
+cumin seed: 935
+black beans: 896
+ground beef: 878
+large garlic cloves: 873
+dried thyme: 873
+flour tortillas: 865
+buttermilk: 863
+plum tomatoes: 858
+granulated sugar: 849
+fresh cilantro: 841
+celery: 837
+crushed red pepper: 825
+chopped cilantro: 796
+mayonaise: 781
+shredded cheddar cheese: 769
+ground coriander: 768
+cucumber: 768
+whole milk: 764
+red wine vinegar: 752
+tumeric: 738
+white onion: 684
+ground ginger: 678
+hot sauce: 674
+cinnamon sticks: 646
+red chili peppers: 644
+whipping cream: 619
+boneless skinless chicken breast halves: 618
+peanut oil: 610
+ground nutmeg: 605
+clove: 600
+parmesan cheese: 591
+dried basil: 585
+peeled fresh ginger: 582
+coarse salt: 578
+warm water: 577
+large egg yolks: 575
+celery ribs: 567
+white vinegar: 554
+egg yolks: 542
+ground red pepper: 538
+dijon mustard: 513
+cold water: 506
+crushed red pepper flakes: 505
+mirin: 503
+fresh basil leaves: 502
+powdered sugar: 501
+large egg whites: 485
+cooking oil: 483
+lime wedges: 482
+shredded mozzarella cheese: 475
+fat free less sodium chicken broth: 473

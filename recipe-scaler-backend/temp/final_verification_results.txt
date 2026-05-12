@@ -1,0 +1,11 @@
+--- Extraction & Scaling Test ---
+Line: '4 cups all purpose flour' -> Extracted: {'name': 'all purpose flour', 'quantity': '4', 'unit': 'cups'}
+Line: 'Sprinkle of salt' -> Extracted: {'name': 'of salt', 'quantity': 'Sprinkle', 'unit': ''}
+Line: 'Salt to taste' -> Extracted: {'name': '', 'quantity': 'Salt to taste', 'unit': ''}
+Line: '1 handful of coriander' -> Extracted: {'name': 'of coriander', 'quantity': '1', 'unit': 'handful'}
+
+--- Scaling Test (2x) ---
+Original: {'name': 'all purpose flour', 'quantity': '4', 'unit': 'cups'} -> Scaled: {'name': 'all purpose flour', 'quantity': 8.0, 'unit': 'cups'}
+Original: {'name': 'of salt', 'quantity': 'Sprinkle', 'unit': ''} -> Scaled: {'name': 'of salt', 'quantity': 'Sprinkle', 'unit': ''}
+Original: {'name': '', 'quantity': 'Salt to taste', 'unit': ''} -> Scaled: {'name': '', 'quantity': 'Salt to taste', 'unit': ''}
+Original: {'name': 'of coriander', 'quantity': '1', 'unit': 'handful'} -> Scaled: {'name': 'of coriander', 'quantity': '1', 'unit': 'handful'}

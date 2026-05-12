@@ -90,20 +90,39 @@ def extract_youtube_data(
             metadata = cached.to_dict()
             ingredients = None
 
-            # Extract ingredients from transcript if requested
+            # Extract ingredients if requested
             if request.extract_ingredients:
-                transcript = YouTubeService.get_youtube_transcript(video_id)
-                if transcript:
-                    extracted_ings = YouTubeService.extract_ingredients_from_transcript(transcript)
-                    ingredients = [
-                        Ingredient(
-                            name=ing['name'],
-                            quantity=ing.get('quantity', 1.0),
-                            unit=ing.get('unit', 'whole'),
-                        )
-                        for ing in extracted_ings
-                    ]
-                    logger.debug(f"Extracted {len(ingredients or [])} ingredients from cached video transcript")
+                # 1. Try description first (AI powered)
+                description = metadata.get('description', '')
+                if description:
+                    logger.info(f"Attempting AI extraction from description (cached) for video: {video_id}")
+                    extracted_ings = YouTubeService.extract_ingredients_from_description(description)
+                    if extracted_ings:
+                        ingredients = [
+                            Ingredient(
+                                name=ing['name'],
+                                quantity=ing.get('quantity', 1.0),
+                                unit=ing.get('unit', 'whole'),
+                                notes=ing.get('notes', None)
+                            )
+                            for ing in extracted_ings
+                        ]
+                        logger.info(f"Extracted {len(ingredients)} ingredients from cached description using AI")
+                
+                # 2. Fallback to transcript if no ingredients found in description
+                if not ingredients:
+                    transcript = YouTubeService.get_youtube_transcript(video_id)
+                    if transcript:
+                        extracted_ings = YouTubeService.extract_ingredients_from_transcript(transcript)
+                        ingredients = [
+                            Ingredient(
+                                name=ing['name'],
+                                quantity=ing.get('quantity', 1.0),
+                                unit=ing.get('unit', 'whole'),
+                            )
+                            for ing in extracted_ings
+                        ]
+                        logger.debug(f"Extracted {len(ingredients or [])} ingredients from cached video transcript")
 
             return YouTubeResponse(
                 metadata=YouTubeMetadata(**metadata),
@@ -178,20 +197,39 @@ def extract_youtube_data(
         # Extract ingredients if requested
         ingredients = None
         if request.extract_ingredients:
-            transcript = YouTubeService.get_youtube_transcript(video_id)
-            if transcript:
-                extracted_ings = YouTubeService.extract_ingredients_from_transcript(transcript)
-                ingredients = [
-                    Ingredient(
-                        name=ing['name'],
-                        quantity=ing.get('quantity', 1.0),
-                        unit=ing.get('unit', 'whole'),
-                    )
-                    for ing in extracted_ings
-                ]
-                logger.info(f"Extracted {len(ingredients)} ingredients from video {video_id} transcript")
-            else:
-                logger.debug(f"No transcript available for video: {video_id}")
+            # 1. Try description first (AI powered)
+            description = metadata_dict.get('description', '')
+            if description:
+                logger.info(f"Attempting AI extraction from description for video: {video_id}")
+                extracted_ings = YouTubeService.extract_ingredients_from_description(description)
+                if extracted_ings:
+                    ingredients = [
+                        Ingredient(
+                            name=ing['name'],
+                            quantity=ing.get('quantity', 1.0),
+                            unit=ing.get('unit', 'whole'),
+                            notes=ing.get('notes', None)
+                        )
+                        for ing in extracted_ings
+                    ]
+                    logger.info(f"Extracted {len(ingredients)} ingredients from description using AI")
+            
+            # 2. Fallback to transcript if no ingredients found in description
+            if not ingredients:
+                transcript = YouTubeService.get_youtube_transcript(video_id)
+                if transcript:
+                    extracted_ings = YouTubeService.extract_ingredients_from_transcript(transcript)
+                    ingredients = [
+                        Ingredient(
+                            name=ing['name'],
+                            quantity=ing.get('quantity', 1.0),
+                            unit=ing.get('unit', 'whole'),
+                        )
+                        for ing in extracted_ings
+                    ]
+                    logger.info(f"Extracted {len(ingredients)} ingredients from video {video_id} transcript")
+                else:
+                    logger.debug(f"No transcript available for video: {video_id}")
 
         return YouTubeResponse(
             metadata=YouTubeMetadata(**metadata_dict),

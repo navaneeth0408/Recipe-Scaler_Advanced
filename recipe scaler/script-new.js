@@ -1,16 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
-  let recipeName        = sessionStorage.getItem('recipeName');
-  let mainIngredient    = sessionStorage.getItem('mainIngredient');
+  let recipeName = sessionStorage.getItem('recipeName');
+  let mainIngredient = sessionStorage.getItem('mainIngredient');
   let scaledIngredients = sessionStorage.getItem('scaledIngredients');
-  let youtubeVideoUrl   = sessionStorage.getItem('youtubeVideoUrl');
-  let isManualRecipe    = sessionStorage.getItem('isManualRecipe');
+  let youtubeVideoUrl = sessionStorage.getItem('youtubeVideoUrl');
+  let isManualRecipe = sessionStorage.getItem('isManualRecipe');
 
   // ── DEBUG: log raw sessionStorage value so we can see what was stored ──
   console.log('[scaled.html] raw scaledIngredients from sessionStorage:', scaledIngredients);
   console.log('[scaled.html] recipeName:', recipeName);
 
   if (recipeName && scaledIngredients) {
-    document.getElementById('recipeName').innerText    = recipeName;
+    document.getElementById('recipeName').innerText = recipeName;
     document.getElementById('mainIngredient').innerText = mainIngredient || '';
 
     // Support both JSON array of strings and legacy <br>-separated strings
@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const li = document.createElement('li');
       li.textContent = trimmed;
-      li.style.cursor     = 'pointer';
-      li.style.padding    = '8px';
+      li.style.cursor = 'pointer';
+      li.style.padding = '8px';
       li.style.borderRadius = '4px';
       li.style.transition = 'all 0.3s ease';
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (this.querySelector('input')) return;
         const originalText = this.textContent;
         const input = document.createElement('input');
-        input.type  = 'text';
+        input.type = 'text';
         input.value = originalText;
         input.style.cssText = 'width:100%;padding:8px;border:2px solid #D96B43;border-radius:4px;font-size:16px;';
 
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // Display recipe notes and instructions
 // ============================================================================
 function displayRecipeNotes() {
-  const notes    = sessionStorage.getItem('recipeNotes');
+  const notes = sessionStorage.getItem('recipeNotes');
   const stepsJson = sessionStorage.getItem('recipeSteps');
   if (!notes && !stepsJson) return;
 
@@ -134,12 +134,12 @@ function displayRecipeNotes() {
 // Save / export helpers
 // ============================================================================
 function saveRecipeWithNotes() {
-  const recipeName    = document.getElementById('recipeName').innerText;
+  const recipeName = document.getElementById('recipeName').innerText;
   const mainIngredient = document.getElementById('mainIngredient').innerText;
-  const ingredients   = [];
+  const ingredients = [];
   document.querySelectorAll('#scaledIngredients li').forEach(item => { ingredients.push(item.innerText); });
 
-  const notes    = sessionStorage.getItem('recipeNotes') || '';
+  const notes = sessionStorage.getItem('recipeNotes') || '';
   const stepsJson = sessionStorage.getItem('recipeSteps') || '[]';
   const youtubeLink = sessionStorage.getItem('youtubeVideoUrl') || '';
 
@@ -168,72 +168,182 @@ function modifyScaling() {
 }
 
 function printRecipe() { window.print(); }
+// ============================================================================
+// PDF SAFE TEXT HELPER
+// ============================================================================
+// ============================================================================
+// PDF SAFE TEXT — handles fractions and typographic chars, strips non-Latin-1
+// ============================================================================
+function pdfSafeText(str) {
+  if (!str) return '';
+  return str
+    .replace(/½/g, '1/2').replace(/¼/g, '1/4').replace(/¾/g, '3/4')
+    .replace(/⅓/g, '1/3').replace(/⅔/g, '2/3').replace(/⅛/g, '1/8')
+    .replace(/⅜/g, '3/8').replace(/⅝/g, '5/8').replace(/⅞/g, '7/8')
+    .replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2013/g, '-').replace(/\u2014/g, '--').replace(/\u2026/g, '...')
+    // Allow Malayalam (\u0D00-\u0D7F) and common Latin chars
+    .replace(/[^\x00-\xFF\u0D00-\u0D7F]/g, '');
+}
 
+// ============================================================================
+// GET SAFE ENGLISH INGREDIENT LINES FOR PDF
+// Reads the English-only key saved at scale time — never touches displayed text
+// ============================================================================
+function getSafeIngredientLines() {
+  // PRIMARY: English strings saved by scaleRecipe at scale time
+  try {
+    const eng = sessionStorage.getItem('scaledIngredientsEnglish');
+    if (eng) {
+      const parsed = JSON.parse(eng);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(pdfSafeText).filter(Boolean);
+      }
+    }
+  } catch (e) { /* fall through */ }
+
+  // FALLBACK 1: window.currentIngredients (English names, structured)
+  if (window.currentIngredients && window.currentIngredients.length > 0) {
+    return window.currentIngredients.map(ing => {
+      const qty = ing.quantity || '';
+      const unit = (ing.unit && ing.unit.toLowerCase() !== 'whole') ? ing.unit : '';
+      const name = ing.name || '';
+      return pdfSafeText([qty, unit, name].filter(Boolean).join(' ').trim());
+    }).filter(Boolean);
+  }
+
+  // FALLBACK 2: scaledIngredients JSON (display strings — Malayalam stripped)
+  try {
+    const raw = sessionStorage.getItem('scaledIngredients');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(pdfSafeText).filter(Boolean);
+      }
+    }
+  } catch (e) { /* fall through */ }
+
+  // FALLBACK 3: DOM scrape (last resort)
+  const lines = [];
+  document.querySelectorAll('#scaledIngredients li').forEach(li => {
+    lines.push(pdfSafeText(li.innerText.trim()));
+  });
+  return lines.filter(Boolean);
+}
+
+// ============================================================================
+// PDF EXPORT
+// ============================================================================
 function exportPDFWithNotes() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const recipeName = document.getElementById('recipeName').innerText;
-  const ingredients = [];
-  document.querySelectorAll('#scaledIngredients li').forEach(item => { ingredients.push(item.innerText); });
-  const notes    = sessionStorage.getItem('recipeNotes');
-  const stepsJson = sessionStorage.getItem('recipeSteps');
-  const steps    = stepsJson ? JSON.parse(stepsJson) : [];
+  const element = document.querySelector('.scaled-recipe');
+  const recipeName = (document.getElementById('recipeName').innerText || 'Recipe').trim();
+  const safeFileName = recipeName.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_') || 'recipe';
 
-  doc.setFontSize(18);
-  doc.text(recipeName, 20, 20);
-  doc.setFontSize(14);
-  doc.text('Ingredients:', 20, 35);
+  // --- PREPARE FOR EXPORT ---
+  const originalDisplay = new Map();
+  const originalStyles = {
+    maxWidth: element.style.maxWidth,
+    width: element.style.width,
+    margin: element.style.margin,
+    padding: element.style.padding,
+    boxShadow: element.style.boxShadow,
+    backgroundColor: element.style.backgroundColor
+  };
 
-  let y = 45;
-  ingredients.forEach(ingredient => {
-    doc.setFontSize(12);
-    doc.text('• ' + ingredient, 25, y);
-    y += 10;
-    if (y > 250) { doc.addPage(); y = 20; }
+  const mainIngredientEl = document.getElementById('mainIngredient');
+  const originalMainDisplay = mainIngredientEl ? mainIngredientEl.style.display : '';
+  if (mainIngredientEl && (mainIngredientEl.innerText.trim() === '' || mainIngredientEl.innerText.trim().toLowerCase() === 'main ingredient:')) {
+    mainIngredientEl.style.display = 'none';
+  }
+
+  const selectorsToHide = [
+    '.recipe-actions',
+    '.nav-buttons',
+    '.recipe-controls',
+    '.recipe-hint',
+    '.video-source'
+  ];
+
+  selectorsToHide.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      originalDisplay.set(selector, el.style.display);
+      el.style.display = 'none';
+    }
   });
 
-  if (notes) {
-    y += 5;
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.setFontSize(14);
-    doc.text('Cooking Notes:', 20, y);
-    y += 10;
-    doc.setFontSize(12);
-    doc.splitTextToSize(notes, 170).forEach(line => {
-      if (y > 250) { doc.addPage(); y = 20; }
-      doc.text(line, 25, y);
-      y += 10;
-    });
-  }
+  // Temporarily normalize element for clean capture
+  element.style.width = '710px';
+  element.style.maxWidth = '710px';
+  element.style.margin = '0';
+  element.style.padding = '25px';
+  element.style.backgroundColor = 'white';
+  element.style.boxShadow = 'none';
 
-  if (steps.length > 0) {
-    y += 5;
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.setFontSize(14);
-    doc.text('Instructions:', 20, y);
-    y += 10;
-    steps.forEach((step, i) => {
-      if (step.trim()) {
-        if (y > 250) { doc.addPage(); y = 20; }
-        doc.setFontSize(12);
-        doc.text(`${i + 1}. ${step}`, 25, y);
-        y += 10;
+  const opt = {
+    margin: 10,
+    filename: `${safeFileName}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      scrollY: 0,
+      scrollX: 0
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: {
+      mode: ['css', 'legacy'],
+      avoid: 'li, h2, p, .recipe-notes-box h3, .recipe-instructions-box h3'
+    }
+  };
+
+  // Trigger export
+  window.html2pdf().set(opt).from(element).save().then(() => {
+    // --- RESTORE AFTER EXPORT ---
+    element.style.maxWidth = originalStyles.maxWidth;
+    element.style.width = originalStyles.width;
+    element.style.margin = originalStyles.margin;
+    element.style.padding = originalStyles.padding;
+    element.style.boxShadow = originalStyles.boxShadow;
+    element.style.backgroundColor = originalStyles.backgroundColor;
+    if (mainIngredientEl) mainIngredientEl.style.display = originalMainDisplay;
+
+    selectorsToHide.forEach(selector => {
+      const el = document.querySelector(selector);
+      if (el) {
+        el.style.display = originalDisplay.get(selector) || '';
       }
     });
-  }
+  }).catch(err => {
+    console.error('PDF Export Error:', err);
+    alert('Failed to export PDF. Please try again.');
 
-  doc.save(`${recipeName.replace(/\s+/g, '_')}.pdf`);
+    element.style.maxWidth = originalStyles.maxWidth;
+    element.style.width = originalStyles.width;
+    element.style.margin = originalStyles.margin;
+    element.style.padding = originalStyles.padding;
+    element.style.boxShadow = originalStyles.boxShadow;
+    element.style.backgroundColor = originalStyles.backgroundColor;
+    if (mainIngredientEl) mainIngredientEl.style.display = originalMainDisplay;
+
+    selectorsToHide.forEach(selector => {
+      const el = document.querySelector(selector);
+      if (el) {
+        el.style.display = originalDisplay.get(selector) || '';
+      }
+    });
+  });
 }
 
 function exportPDF() { exportPDFWithNotes(); }
-
 function exportTextWithNotes() {
   const recipeName = document.getElementById('recipeName').innerText;
   const ingredients = [];
   document.querySelectorAll('#scaledIngredients li').forEach(item => { ingredients.push(item.innerText); });
-  const notes    = sessionStorage.getItem('recipeNotes');
+  const notes = sessionStorage.getItem('recipeNotes');
   const stepsJson = sessionStorage.getItem('recipeSteps');
-  const steps    = stepsJson ? JSON.parse(stepsJson) : [];
+  const steps = stepsJson ? JSON.parse(stepsJson) : [];
 
   let content = `${recipeName}\n\nIngredients:\n`;
   ingredients.forEach(i => { content += `- ${i}\n`; });
@@ -267,18 +377,18 @@ function emailRecipe() {
 // Unit conversion
 // ============================================================================
 const unitConversionMap = {
-  'gram':  { 'oz': 0.035274, 'lb': 0.00220462 },
-  'g':     { 'oz': 0.035274, 'lb': 0.00220462 },
-  'kg':    { 'oz': 35.274,   'lb': 2.20462 },
-  'oz':    { 'gram': 28.3495, 'g': 28.3495, 'kg': 0.0283495 },
-  'lb':    { 'gram': 453.592, 'g': 453.592,  'kg': 0.453592 },
-  'ml':    { 'cup': 0.00423344, 'tbsp': 0.067628, 'tsp': 0.202884, 'oz': 0.033814 },
-  'l':     { 'cup': 4.22675, 'tbsp': 67.628, 'tsp': 202.884, 'oz': 33.814 },
+  'gram': { 'oz': 0.035274, 'lb': 0.00220462 },
+  'g': { 'oz': 0.035274, 'lb': 0.00220462 },
+  'kg': { 'oz': 35.274, 'lb': 2.20462 },
+  'oz': { 'gram': 28.3495, 'g': 28.3495, 'kg': 0.0283495 },
+  'lb': { 'gram': 453.592, 'g': 453.592, 'kg': 0.453592 },
+  'ml': { 'cup': 0.00423344, 'tbsp': 0.067628, 'tsp': 0.202884, 'oz': 0.033814 },
+  'l': { 'cup': 4.22675, 'tbsp': 67.628, 'tsp': 202.884, 'oz': 33.814 },
   'liter': { 'cup': 4.22675, 'tbsp': 67.628, 'tsp': 202.884, 'oz': 33.814 },
-  'cup':   { 'ml': 236.588, 'tbsp': 16, 'tsp': 48, 'oz': 8 },
-  'cups':  { 'ml': 236.588, 'tbsp': 16, 'tsp': 48, 'oz': 8 },
-  'tbsp':  { 'ml': 14.7868, 'cup': 0.0625, 'tsp': 3, 'oz': 0.5 },
-  'tsp':   { 'ml': 4.92892, 'cup': 0.0208333, 'tbsp': 0.333333, 'oz': 0.166667 },
+  'cup': { 'ml': 236.588, 'tbsp': 16, 'tsp': 48, 'oz': 8 },
+  'cups': { 'ml': 236.588, 'tbsp': 16, 'tsp': 48, 'oz': 8 },
+  'tbsp': { 'ml': 14.7868, 'cup': 0.0625, 'tsp': 3, 'oz': 0.5 },
+  'tsp': { 'ml': 4.92892, 'cup': 0.0208333, 'tbsp': 0.333333, 'oz': 0.166667 },
 };
 
 function convertUnit(quantity, fromUnit, toUnit) {
@@ -287,6 +397,37 @@ function convertUnit(quantity, fromUnit, toUnit) {
   const t = toUnit.toLowerCase();
   if (unitConversionMap[f] && unitConversionMap[f][t]) return quantity * unitConversionMap[f][t];
   return quantity;
+}
+
+function formatQuantity(qty) {
+  const n = parseFloat(qty);
+  if (isNaN(n)) return '1';
+  if (Number.isInteger(n)) return String(n);
+
+  const whole = Math.floor(n);
+  const rem = parseFloat((n - whole).toFixed(3));
+
+  const fractionMap = {
+    0.25: '1/4',
+    0.5: '1/2',
+    0.75: '3/4',
+    0.333: '1/3',
+    0.667: '2/3',
+    0.125: '1/8',
+    0.375: '3/8',
+    0.625: '5/8',
+    0.875: '7/8',
+    0.2: '1/5',
+    0.4: '2/5',
+    0.6: '3/5',
+    0.8: '4/5'
+  };
+
+  const frac = fractionMap[rem];
+  if (frac) {
+    return whole > 0 ? `${whole} ${frac}` : frac;
+  }
+  return parseFloat(n.toFixed(2)).toString();
 }
 
 function parseIngredientForConversion(ingredientStr) {
@@ -298,7 +439,7 @@ function parseIngredientForConversion(ingredientStr) {
 }
 
 function formatConvertedIngredient(quantity, unit, name) {
-  const formatted = quantity % 1 === 0 ? quantity.toString() : quantity.toFixed(2).replace(/\.?0+$/, '');
+  const formatted = formatQuantity(quantity);
   return `${formatted} ${unit} ${name}`.trim();
 }
 

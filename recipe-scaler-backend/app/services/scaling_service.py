@@ -55,7 +55,8 @@ class ScalingService:
                 return float(num)/float(den)
             return float(value)
         except Exception:
-            return 0.0
+            # If it's a non-numeric string that isn't empty, 1.0 is a safer default than 0.0
+            return 1.0 if value else 0.0
 
     @staticmethod
     def scale_ingredient(
@@ -71,13 +72,41 @@ class ScalingService:
             return ingredient
 
         scale_factor = target_servings / original_servings
-        qty = ScalingService.parse_fraction(ingredient.get('quantity', 0))
-        new_quantity = qty * scale_factor
+        
+        # Get raw quantity
+        raw_qty = ingredient.get('quantity', 0)
+        unit = (ingredient.get('unit') or '').lower().strip()
+        
+        # Check if it's a non-numeric/vague quantity (like "sprinkle", "pinch", "to taste")
+        # OR if the unit itself is vague (like "handful", "pinch")
+        # Vague units should generally not be scaled per user request
+        vague_units = ['pinch', 'handful', 'sprinkle', 'dash', 'drop', 'to taste']
+        
+        is_vague = False
+        if any(v in unit for v in vague_units):
+            is_vague = True
+            new_quantity = raw_qty
+        elif isinstance(raw_qty, str):
+            # If it's empty, treat as 1.0 (internal logic often defaults empty to 1)
+            if not raw_qty.strip():
+                qty = 1.0
+            # If it contains digits/fractions, it's numeric
+            elif re.search(r'\d', raw_qty):
+                qty = ScalingService.parse_fraction(raw_qty)
+            # Otherwise it's a vague string like "pinch", "sprinkle", "to taste"
+            else:
+                is_vague = True
+                new_quantity = raw_qty
+        else:
+            qty = float(raw_qty) if raw_qty is not None else 0.0
+
+        if not is_vague:
+            new_quantity = ScalingService._round_quantity(qty * scale_factor)
 
         # Create scaled ingredient copy
         scaled = ingredient.copy()
-        scaled['quantity'] = ScalingService._round_quantity(new_quantity)
-        scaled['original_quantity'] = ingredient.get('quantity')
+        scaled['quantity'] = new_quantity
+        scaled['original_quantity'] = raw_qty
         scaled['original_unit'] = ingredient.get('unit')
 
         return scaled

@@ -52,6 +52,7 @@ class YouTubeSearchRequest(BaseModel):
     category: Optional[str] = Field(default=None, description="Recipe category (e.g., 'pasta', 'chicken')")
     page_token: Optional[str] = Field(default=None, description="Pagination token")
     max_results: int = Field(default=6, description="Max results to return")
+    sort_by: str = Field(default="views", description="Sort criteria ('views' or 'relevance')")
 
     class Config:
         json_schema_extra = {
@@ -232,8 +233,9 @@ def filter_search_results(
         
         scored_results.append(result)
     
-    # Sort by score (descending) and return top results
-    scored_results.sort(key=lambda x: x['relevance_score'], reverse=True)
+    # Sort and return top results
+    # Default is views, with relevance as fallback
+    scored_results.sort(key=lambda x: (x.get('views', 0), x['relevance_score']), reverse=True)
     
     return scored_results[:max_results]
 

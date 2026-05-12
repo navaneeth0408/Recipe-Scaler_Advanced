@@ -1,0 +1,822 @@
+commit 8bade8d565b53c014e05cbb56e3529b07f3c1c98
+Author: Navaneeth M <vv1975navaneeth@gmail.com>
+Date:   Fri Apr 10 01:10:07 2026 +0530
+
+    almost ready
+
+diff --git a/recipe scaler/image.png b/recipe scaler/image.png
+new file mode 100644
+index 0000000..1bcb49f
+Binary files /dev/null and b/recipe scaler/image.png differ
+diff --git a/recipe scaler/ui-controller.js b/recipe scaler/ui-controller.js
+index a00fa05..6443abd 100644
+--- a/recipe scaler/ui-controller.js	
++++ b/recipe scaler/ui-controller.js	
+@@ -72,6 +72,7 @@ const ingredientMap = {
+   "tomato": "തക്കാളി",
+   "onion": "സവാള",
+   "green chilli": "പച്ചമുളക്",
++  "green chillies": "പച്ചമുളക്",
+   "chilli": "മുളക്",
+   "capsicum": "കാപ്സിക്കം",
+   "carrot": "കാരറ്റ്",
+@@ -80,12 +81,15 @@ const ingredientMap = {
+   "garlic": "വെളുത്തുള്ളി",
+   "curry leaves": "കരിവേപ്പില",
+   "coriander leaves": "മല്ലിയില",
++  "coriander": "മല്ലി",
+   "turmeric": "മഞ്ഞൾ",
+   "salt": "ഉപ്പ്",
+   "sugar": "പഞ്ചസാര",
+   "oil": "എണ്ണ",
++  "ghee": "നെയ്യ്",
+   "mustard seeds": "കടുക്",
+   "cumin seeds": "ജീരകം",
++  "cumin": "ജീരകം",
+   "pepper": "കുരുമുളക്",
+   "green pepper": "പച്ച കാപ്സിക്കം",
+   "red pepper": "ചുവപ്പ് കാപ്സിക്കം",
+@@ -93,7 +97,33 @@ const ingredientMap = {
+   "mozzarella": "മൊസറെല്ല",
+   "butter": "വെണ്ണ",
+   "milk": "പാൽ",
+-  "flour": "മാവ്"
++  "curd": "തൈര്",
++  "flour": "മാവ്",
++  "rice": "അരി",
++  "chicken": "ചിക്കൻ",
++  "tomatoes": "തക്കാളി",
++  "potatoes": "ഉരുളക്കിഴങ്ങ്",
++  "onions": "സവാള",
++  "carrots": "കാരറ്റ്",
++  "green bell pepper": "പച്ച കാപ്സിക്കം",
++  "red bell pepper": "ചുവപ്പ് കാപ്സിക്കം",
++  "egg": "മുട്ട",
++  "eggs": "മുട്ട",
++  "curry powder": "കറി പൗഡർ",
++  "seasoning cube": "സീസണിംഗ് ക്യൂബ്",
++  "all purpose": "ഓൾ പർപ്പസ്",
++  "instant": "ഇൻസ്റ്റന്റ്",
++  "yeast": "യീസ്റ്റ്",
++  "breast": "ബ്രെസ്റ്റ്",
++  "breasts": "ബ്രെസ്റ്റ്",
++  "mozarella": "മൊസറെല്ല",
++  "sausage": "സോസേജ്",
++  "bacon": "ബേക്കൺ",
++  "scotch bonnet": "സ്കോച്ച് ബോണറ്റ്",
++  "bonnet": "ബോണറ്റ്",
++  "peppers": "പെപ്പേഴ്സ്",
++  "rose water": "റോസ് വാട്ടർ",
++  "rose": "റോസ്"
+ };
+ 
+ const reverseMap = Object.fromEntries(
+@@ -111,14 +141,23 @@ const unitMap = {
+   "tsp": "ടീസ്പൂൺ",
+   "gram": "ഗ്രാം",
+   "grams": "ഗ്രാം",
++  "kilogram": "കിലോ",
++  "kilograms": "കിലോ",
+   "kg": "കിലോ",
++  "milliliter": "മില്ലി",
++  "milliliters": "മില്ലി",
+   "ml": "മില്ലി",
+   "liter": "ലിറ്റർ",
++  "liters": "ലിറ്റർ",
+   "litre": "ലിറ്റർ",
+   "piece": "കഷണം",
+   "pieces": "കഷണങ്ങൾ",
+   "slice": "സ്ലൈസ്",
+-  "slices": "സ്ലൈസ്"
++  "slices": "സ്ലൈസ്",
++  "table spoon": "ടേബിൾസ്പൂൺ",
++  "table spoons": "ടേബിൾസ്പൂൺ",
++  "sprinkle of": "കുറച്ച്",
++  "sprinkle": "കുറച്ച്"
+ };
+ 
+ const reverseUnitMap = Object.fromEntries(
+@@ -137,7 +176,8 @@ const descriptorMap = {
+   "large": "വലിയ",
+   "small": "ചെറിയ",
+   "to": "",
+-  "taste": "രുചിക്ക്"
++  "taste": "രുചിക്ക്",
++  "bulb": ""
+ };
+ 
+ const reverseDescriptorMap = Object.fromEntries(
+@@ -149,7 +189,7 @@ function isMalayalam(word) {
+ }
+ 
+ function isNumber(word) {
+-  return /^[0-9\/\.]+$/.test(word);
++  return /^[0-9\/\.\-]+$/.test(word);
+ }
+ 
+ function transliterate(word) {
+@@ -189,7 +229,20 @@ function processTranslation(text, selectedLang) {
+   }
+ 
+   // To Malayalam Strict Pipeline
+-  return text.split(" ").map(word => {
++  let processedText = text.trim();
++
++  // Pre-process multi-word phrases safely for all maps
++  const allMaps = { ...descriptorMap, ...unitMap, ...ingredientMap };
++  const sortedKeys = Object.keys(allMaps).sort((a, b) => b.length - a.length);
++  sortedKeys.forEach(key => {
++    if (key.includes(' ')) {
++      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++      const regex = new RegExp(`\\b${escapedKey}\\b`, 'gi');
++      processedText = processedText.replace(regex, allMaps[key]);
++    }
++  });
++
++  return processedText.split(" ").map(word => {
+     let clean = word.toLowerCase().replace(/[.,]/g, '');
+ 
+     if (isMalayalam(word)) return word;
+@@ -236,10 +289,23 @@ function translateIngredients() {
+ // ============================================================================
+ 
+ function renderIngredientsList(ingredients, containerId = 'ingredientsList', isTranslation = false) {
+-  window.currentIngredients = ingredients;
++  const uniqueMap = new Map();
++  (ingredients || []).forEach(ing => {
++    const normName = (ing.name || '').toLowerCase().trim();
++    const normUnit = (ing.unit || '').toLowerCase().trim();
++    const key = `${normName}|${normUnit}`;
++    // Keep first occurrence of identical name and unit
++    if (!uniqueMap.has(key)) {
++      uniqueMap.set(key, { ...ing });
++    }
++  });
++
++  const dedupIngredients = Array.from(uniqueMap.values());
++  ingredients = dedupIngredients;
++  window.currentIngredients = dedupIngredients;
+ 
+   if (!isTranslation) {
+-    originalIngredients = JSON.parse(JSON.stringify(ingredients || []));
++    originalIngredients = JSON.parse(JSON.stringify(dedupIngredients || []));
+     const malayalamRegex = /[\u0D00-\u0D7F]/;
+     const isMalayalam = originalIngredients.some(ing => malayalamRegex.test(ing.name || ''));
+     sourceLanguage = isMalayalam ? "malayalam" : "english";
+@@ -768,44 +834,20 @@ window.scaleRecipe = async function () {
+       // Each item is { name, quantity, unit, ... } — format directly.
+       // Each item might have the original quantity inside `ing.name` and the scale factor in `ing.quantity`
+       const scaledIngredients = response.ingredients.map(ing => {
+-        const scaleFactor = ing.quantity || 1;
++        const qty = ing.quantity || 1;
++        const unit = (ing.unit || '').trim();
+         const originalName = (ing.name || '').trim();
+ 
+-        // Extract numeric quantity from the beginning of the name
+-        const regex = /^((?:\d+\s+)?\d+\/\d+|\d+(?:\.\d+)?)\s*(.*)$/;
+-        const match = originalName.match(regex);
+-
+-        if (match) {
+-          const qtyStr = match[1].trim();
+-          const restOfIngredient = match[2].trim();
+-
+-          // Convert fractions to decimals
+-          let numericQty = 0;
+-          if (qtyStr.includes(' ') && qtyStr.includes('/')) {
+-            const parts = qtyStr.split(' ');
+-            const whole = parseFloat(parts[0]);
+-            const fracParts = parts[1].split('/');
+-            numericQty = whole + (parseFloat(fracParts[0]) / parseFloat(fracParts[1]));
+-          } else if (qtyStr.includes('/')) {
+-            const fracParts = qtyStr.split('/');
+-            numericQty = parseFloat(fracParts[0]) / parseFloat(fracParts[1]);
+-          } else {
+-            numericQty = parseFloat(qtyStr);
+-          }
+-
+-          // Multiply original quantity by scale factor
+-          const scaledQty = numericQty * scaleFactor;
+-
+-          // Format back into a readable quantity using existing helper
+-          const rounded = parseFloat(scaledQty.toFixed(4).replace(/\.?0+$/, ''));
+-          const formattedQty = formatNiceQuantity(rounded);
+-
+-          // Rebuild ingredient string
+-          return `${formattedQty} ${restOfIngredient}`;
+-        }
++        const formattedQty = formatNiceQuantity(qty);
++        const isWhole = unit.toLowerCase() === 'whole';
+ 
+-        // Output raw ingredient if no numbers found
+-        return originalName;
++        if (isWhole) {
++          // If it's just '1 whole chicken', maybe we just say '1 chicken' or 'chicken' based on convention,
++          // but the previous rule was:
++          return qty === 1 ? originalName : `${formattedQty} ${originalName}`.trim();
++        } else {
++          return `${formattedQty} ${unit} ${originalName}`.replace(/\s+/g, ' ').trim();
++        }
+       });
+ 
+       console.log('[scaleRecipe] formatted strings going to sessionStorage:', scaledIngredients.slice(0, 4));
+diff --git a/recipe-scaler-backend/app/recipe_scaler.db b/recipe-scaler-backend/app/recipe_scaler.db
+index 9d9a344..f81f418 100644
+Binary files a/recipe-scaler-backend/app/recipe_scaler.db and b/recipe-scaler-backend/app/recipe_scaler.db differ
+diff --git a/recipe-scaler-backend/app/routes/ai.py b/recipe-scaler-backend/app/routes/ai.py
+index da5d350..b395fbe 100644
+--- a/recipe-scaler-backend/app/routes/ai.py
++++ b/recipe-scaler-backend/app/routes/ai.py
+@@ -10,10 +10,10 @@ import logging
+ import uuid
+ 
+ from app.services.ai_ingredient_service import ai_ingredient_service
+-from app.services.ai_substitution_service import ai_substitution_service, DietaryPreference, Cuisine
++from app.services.ai_substitution_service import ai_substitution_service
+ from app.services.nutrition_service import nutrition_service
+ from app.services.chat_service import cooking_assistant
+-from app.services.translation_service import translation_service, Language
++from app.services.translation_service import translation_service
+ 
+ logger = logging.getLogger(__name__)
+ router = APIRouter(prefix="/api/ai", tags=["ai"])
+@@ -136,8 +136,6 @@ async def suggest_substitutions(request: SubstituteRequest):
+             ingredient=request.ingredient,
+             quantity=request.quantity,
+             unit=request.unit,
+-            dietary_preference=request.dietary_preference,
+-            cuisine=request.cuisine,
+             available_ingredients=request.available_ingredients
+         )
+         
+diff --git a/recipe-scaler-backend/app/routes/youtube.py b/recipe-scaler-backend/app/routes/youtube.py
+index c5559cf..fd634b0 100644
+--- a/recipe-scaler-backend/app/routes/youtube.py
++++ b/recipe-scaler-backend/app/routes/youtube.py
+@@ -513,11 +513,13 @@ async def extract_audio_ingredients(
+         
+         transcript = None
+         video_title = None
++        detected_lang = None
+         
+         if cached_transcript:
+             logger.info(f"[AUDIO_EXTRACTION] Using cached transcript for video: {video_id}")
+             transcript = cached_transcript.transcript
+             video_title = cached_transcript.title
++            detected_lang = cached_transcript.language
+         else:
+             # Get video metadata first
+             logger.info(f"[AUDIO_EXTRACTION] Fetching video metadata for: {video_id}")
+@@ -529,31 +531,44 @@ async def extract_audio_ingredients(
+                 logger.warning(f"[AUDIO_EXTRACTION] Could not fetch metadata: {str(e)}")
+                 video_title = "Unknown"
+             
+-            # Download audio from YouTube
+-            logger.info(f"[AUDIO_EXTRACTION] Downloading audio from YouTube video: {video_id}")
+-            try:
+-                audio_path = AudioService.download_youtube_audio(youtube_url)
+-                logger.info("Audio downloaded")
+-                logger.info(f"[AUDIO_EXTRACTION] Audio downloaded to: {audio_path}")
+-            except Exception as e:
+-                logger.error(f"[AUDIO_EXTRACTION] Audio download failed: {str(e)}")
+-                return {"error": "Audio extraction failed", "details": f"Failed to download video audio: {str(e)}"}
++            # Attempt subtitle-first logic
++            logger.info("[AUDIO_EXTRACTION] Checking for native Malayalam subtitles...")
++            transcript = AudioService.extract_subtitles(youtube_url, langs=['ml'])
+             
+-            # Transcribe audio using Whisper
+-            logger.info("Transcription started")
+-            logger.info(f"[AUDIO_EXTRACTION] Starting speech-to-text transcription")
+-            try:
+-                transcript = SpeechService.transcribe_audio(audio_path)
+-                logger.info(f"Transcript length: {len(transcript)}")
+-                logger.info(f"[AUDIO_EXTRACTION] Transcription completed, {len(transcript)} characters")
+-            except Exception as e:
+-                logger.error(f"[AUDIO_EXTRACTION] Transcription failed: {str(e)}")
+-                # Clean up audio file
+-                AudioService.cleanup_audio_file(audio_path)
+-                return {"error": "Audio extraction failed", "details": f"Unable to transcribe video audio: {str(e)}"}
+-            finally:
+-                # Clean up audio file
+-                AudioService.cleanup_audio_file(audio_path)
++            if transcript:
++                logger.info("[AUDIO_EXTRACTION] Found subtitle track natively! Skipping full audio download.")
++                detected_lang = Language.MALAYALAM.value
++            else:
++                logger.info("[AUDIO_EXTRACTION] No subtitles found, proceeding to audio extraction.")
++                # Download audio from YouTube
++                logger.info(f"[AUDIO_EXTRACTION] Downloading audio from YouTube video: {video_id}")
++                try:
++                    audio_path = AudioService.download_youtube_audio(youtube_url)
++                    logger.info("Audio downloaded")
++                    logger.info(f"[AUDIO_EXTRACTION] Audio downloaded to: {audio_path}")
++                except Exception as e:
++                    logger.error(f"[AUDIO_EXTRACTION] Audio download failed: {str(e)}")
++                    return {"error": "Audio extraction failed", "details": f"Failed to download video audio: {str(e)}"}
++                
++                logger.info("[AUDIO_EXTRACTION] Detecting language from audio...")
++                detected_lang = SpeechService.detect_language_from_audio(audio_path)
++                logger.info(f"[AUDIO_EXTRACTION] Detected language from audio: {detected_lang}")
++                
++                # Transcribe audio using Whisper
++                logger.info("Transcription started")
++                logger.info(f"[AUDIO_EXTRACTION] Starting speech-to-text transcription with lang={detected_lang}")
++                try:
++                    transcript = SpeechService.transcribe_audio(audio_path, language=detected_lang)
++                    logger.info(f"Transcript length: {len(transcript)}")
++                    logger.info(f"[AUDIO_EXTRACTION] Transcription completed, {len(transcript)} characters")
++                except Exception as e:
++                    logger.error(f"[AUDIO_EXTRACTION] Transcription failed: {str(e)}")
++                    # Clean up audio file
++                    AudioService.cleanup_audio_file(audio_path)
++                    return {"error": "Audio extraction failed", "details": f"Unable to transcribe video audio: {str(e)}"}
++                finally:
++                    # Clean up audio file
++                    AudioService.cleanup_audio_file(audio_path)
+             
+             # Cache the transcript
+             logger.info(f"[AUDIO_EXTRACTION] Caching transcript for video: {video_id}")
+@@ -565,7 +580,7 @@ async def extract_audio_ingredients(
+                     title=video_title,
+                     transcript=transcript,
+                     extraction_method="audio",
+-                    language="en"
++                    language=detected_lang
+                 )
+                 db.add(transcript_cache)
+                 db.commit()
+@@ -581,7 +596,13 @@ async def extract_audio_ingredients(
+         
+         # Filter transcript for ingredient-related sentences
+         logger.info(f"[AUDIO_EXTRACTION] Filtering transcript for ingredient-related content")
+-        filtered_transcript = filter_ingredient_sentences(transcript)
++        
++        # If language is unknown at this point (uncached legacy), try predicting it
++        if not detected_lang:
++            detected_lang = translation_service.detect_language(transcript)
++
++        # Filter and translate (if 'ml') inside the filter service
++        filtered_transcript = filter_ingredient_sentences(transcript, language=detected_lang)
+         
+         if not filtered_transcript:
+             logger.warning(f"[AUDIO_EXTRACTION] No ingredient-related content found in transcript")
+@@ -596,10 +617,9 @@ async def extract_audio_ingredients(
+             return response.dict()
+ 
+         # ------------------------------------------------------------------
+-        # Language detection & Malayalam → English translation for parsing
++        # Language handling for downstream parsing
+         # ------------------------------------------------------------------
+-        detected_lang = translation_service.detect_language(filtered_transcript)
+-        logger.info(f"[AUDIO_EXTRACTION] Detected transcript language: {detected_lang}")
++        logger.info(f"[AUDIO_EXTRACTION] Extracted language downstream: {detected_lang}")
+ 
+         if detected_lang not in (Language.ENGLISH.value, Language.MALAYALAM.value):
+             logger.info(
+@@ -616,16 +636,8 @@ async def extract_audio_ingredients(
+             )
+             return response.dict()
+ 
++        # Since filter_ingredient_sentences translates Malayalam to English, text_for_extraction is already in English
+         text_for_extraction = filtered_transcript
+-        if detected_lang == Language.MALAYALAM.value:
+-            logger.info("[AUDIO_EXTRACTION] Translating Malayalam transcript to English for parsing")
+-            translated = translation_service.translate_text(
+-                filtered_transcript,
+-                source_lang=Language.MALAYALAM.value,
+-                target_lang=Language.ENGLISH.value,
+-            )
+-            if translated:
+-                text_for_extraction = translated
+         
+         # Extract ingredients from (possibly translated) filtered transcript
+         logger.info("Parsing ingredients from transcript")
+diff --git a/recipe-scaler-backend/app/services/ai_substitution_service.py b/recipe-scaler-backend/app/services/ai_substitution_service.py
+index b443050..e44904a 100644
+--- a/recipe-scaler-backend/app/services/ai_substitution_service.py
++++ b/recipe-scaler-backend/app/services/ai_substitution_service.py
+@@ -82,6 +82,42 @@ SUBSTITUTIONS = {
+             "ratio_float": 1.0,
+             "note": "Direct substitute, adds slight molasses flavor",
+         }
++    ],
++    "ginger": [
++        {
++            "name": "ground ginger powder",
++            "ratio": "1/4",
++            "ratio_float": 0.25,
++            "note": "Use 1/4 tsp ground dried ginger per 1 tbsp fresh",
++        }
++    ],
++    "chilli": [
++        {
++            "name": "red chilli powder / cayenne pepper",
++            "ratio": "1/2",
++            "ratio_float": 0.5,
++            "note": "Dry powder is more concentrated than fresh chillies",
++        },
++        {
++            "name": "jalapenos or bell peppers",
++            "ratio": "1:1",
++            "ratio_float": 1.0,
++            "note": "For fresh crunch without as much heat",
++        }
++    ],
++    "turmeric": [
++        {
++            "name": "curry powder",
++            "ratio": "1:1",
++            "ratio_float": 1.0,
++            "note": "Contains turmeric but adds other flavors",
++        },
++        {
++            "name": "saffron",
++            "ratio": "pinch",
++            "ratio_float": 0.1,
++            "note": "For color substitute (very expensive though)",
++        }
+     ]
+ }
+ 
+@@ -212,7 +248,9 @@ class AISubstitutionService:
+                 cat_match = "similar textured root or cruciferous vegetable"
+             elif any(d in ingredient_lower for d in ["milk", "cream", "butter", "dairy", "yogurt"]):
+                 cat_match = "dairy-free milk alternative (like almond/oat milk)"
+-            elif any(s in ingredient_lower for s in ["pepper", "cumin", "salt", "sugar", "spice", "herb"]):
++            elif any(s in ingredient_lower for s in ["green chilli", "red chilli", "chili", "jalapeno", "pepper", "paprika"]):
++                cat_match = "another mild or hot pepper/spice"
++            elif any(s in ingredient_lower for s in ["cumin", "salt", "sugar", "spice", "herb", "coriander", "turmeric", "masala"]):
+                 cat_match = "another earth-toned spice or herb"
+ 
+             return [
+diff --git a/recipe-scaler-backend/app/services/audio_service.py b/recipe-scaler-backend/app/services/audio_service.py
+index 6223319..3247fda 100644
+--- a/recipe-scaler-backend/app/services/audio_service.py
++++ b/recipe-scaler-backend/app/services/audio_service.py
+@@ -68,7 +68,8 @@ class AudioService:
+ 
+             # yt-dlp options for downloading best audio only
+             ydl_opts = {
+-                'format': 'bestaudio[ext=m4a]/bestaudio/best',  # Download best audio in m4a format
++                # Prioritize webm to avoid FixupM4a post-processor which causes [WinError 5] on Windows
++                'format': 'bestaudio[ext=webm]/bestaudio/best', 
+                 'postprocessors': [{
+                     'key': 'FFmpegExtractAudio',
+                     'preferredcodec': 'wav',  # Convert to WAV for Whisper
+@@ -82,6 +83,8 @@ class AudioService:
+                 'quiet': False,
+                 'no_warnings': False,
+                 'socket_timeout': 30,
++                'extractor_retries': 3,
++                'sleep_interval_requests': 1,
+             }
+ 
+             logger.debug(f"yt-dlp options: {ydl_opts}")
+@@ -166,3 +169,89 @@ class AudioService:
+         except Exception as e:
+             logger.error(f"Failed to cleanup temp directory: {str(e)}")
+             return 0
++
++    @staticmethod
++    def extract_subtitles(video_url: str, langs: Optional[list] = None) -> Optional[str]:
++        """
++        Extract subtitles directly using yt-dlp without downloading full audio.
++        Optimized for speed.
++        
++        Args:
++            video_url: URL to the YouTube video
++            langs: List of language codes to attempt (e.g. ['ml', 'en'])
++            
++        Returns:
++            Concatenated subtitle text, or None if no matching subtitles exist.
++        """
++        if yt_dlp is None:
++            return None
++            
++        if langs is None:
++            langs = ['ml']
++            
++        try:
++            import time
++            import re
++            from app.services.youtube_service import YouTubeService
++            
++            AudioService.ensure_temp_dir()
++            video_id = YouTubeService.extract_video_id(video_url) or "subtitle"
++            timestamp = int(time.time())
++            filename = f"{video_id}_{timestamp}_sub"
++            
++            ydl_opts = {
++                'skip_download': True,      # Do not download video/audio
++                'writesubtitles': True,     # Download manual subtitles
++                'writeautomaticsub': True,  # Fallback to auto-generated
++                'subtitleslangs': langs,    # Try to fetch these languages
++                'subtitlesformat': 'vtt',
++                'outtmpl': str(AudioService.TEMP_DIR / f"{filename}.%(ext)s"),
++                'quiet': True,
++                'no_warnings': True,
++                'extractor_retries': 3,
++                'sleep_interval_requests': 1,
++            }
++            
++            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
++                logger.info(f"Attempting to download subtitles for languages: {langs}")
++                ydl.extract_info(video_url, download=True)
++                
++            # Find the downloaded .vtt file (name varies slightly depending on lang and auto vs manual)
++            possible_files = list(AudioService.TEMP_DIR.glob(f"{filename}*.vtt"))
++            if not possible_files:
++                logger.info(f"No .vtt subtitles found for {video_id} in languages: {langs}")
++                return None
++                
++            sub_file = possible_files[0]
++            logger.info(f"Found subtitle file: {sub_file.name}")
++            
++            with open(sub_file, 'r', encoding='utf-8') as f:
++                content = f.read()
++                
++            AudioService.cleanup_audio_file(str(sub_file))
++            
++            # Simple VTT parser: strip timestamps, HTML/WEBVTT tags, and empty lines
++            text_lines = []
++            for line in content.split('\n'):
++                line = line.strip()
++                if not line or line == 'WEBVTT' or '-->' in line or line.startswith('Kind:') or line.startswith('Language:'):
++                    continue
++                # Remove tags like <c>
++                clean_line = re.sub(r'<[^>]+>', '', line)
++                if clean_line:
++                    text_lines.append(clean_line)
++                    
++            full_text = " ".join(text_lines)
++            
++            # Deduplicate repeated words (common in auto-generated captions)
++            words = full_text.split()
++            dedup_words = []
++            for w in words:
++                if not dedup_words or dedup_words[-1] != w:
++                    dedup_words.append(w)
++                    
++            return " ".join(dedup_words) if dedup_words else full_text
++            
++        except Exception as e:
++            logger.warning(f"Failed to extract subtitles via yt-dlp: {str(e)}")
++            return None
+diff --git a/recipe-scaler-backend/app/services/ingredient_filter_service.py b/recipe-scaler-backend/app/services/ingredient_filter_service.py
+index 07d4750..17ba483 100644
+--- a/recipe-scaler-backend/app/services/ingredient_filter_service.py
++++ b/recipe-scaler-backend/app/services/ingredient_filter_service.py
+@@ -90,24 +90,42 @@ STRICT_FOOD_WHITELIST = [
+ STRICT_FOOD_WHITELIST.sort(key=len, reverse=True)
+ 
+ 
+-def filter_ingredient_sentences(transcript: str) -> str:
++def filter_ingredient_sentences(transcript: str, language: str = "en") -> str:
+     """
+     Filter transcript to extract only ingredient-related sentences
+     using the strict food whitelist.
+     
+     Args:
+         transcript: Full transcribed text from video
++        language: The language of the transcript (e.g., 'en', 'ml')
+         
+     Returns:
+-        Filtered text containing only sentences with whitelist food keywords
++        Filtered text containing only sentences with whitelist food keywords.
++        If language was 'ml', returns the translated English text.
+     """
+     if not transcript or not isinstance(transcript, str):
+         logger.warning("Invalid transcript provided")
+         return ""
+ 
+     try:
++        # Dual-path filtering: if Malayalam, translate entirely first so the English whitelist works
++        if language == "ml":
++            logger.info("Malayalam transcript detected. Translating to English before filtering.")
++            from app.services.translation_service import translation_service, Language
++            transcript_to_filter = translation_service.translate_text(
++                transcript,
++                source_lang=Language.MALAYALAM.value,
++                target_lang=Language.ENGLISH.value
++            )
++            # If translation returns empty for some reason, fallback to original
++            if not transcript_to_filter:
++                logger.warning("Translation failed. Falling back to original transcript.")
++                transcript_to_filter = transcript
++        else:
++            transcript_to_filter = transcript
++
+         # Split into sentences using punctuation and newlines
+-        sentences = [s.strip() for s in re.split(r'[.!?\n]+', transcript) if s.strip()]
++        sentences = [s.strip() for s in re.split(r'[.!?\n]+', transcript_to_filter) if s.strip()]
+         
+         filtered_sentences = []
+         
+diff --git a/recipe-scaler-backend/app/services/speech_service.py b/recipe-scaler-backend/app/services/speech_service.py
+index 5458417..74874fe 100644
+--- a/recipe-scaler-backend/app/services/speech_service.py
++++ b/recipe-scaler-backend/app/services/speech_service.py
+@@ -22,13 +22,16 @@ class SpeechService:
+     MODEL_NAME = "base"  # Options: tiny, base, small, medium, large
+     DEVICE = "auto"  # Auto-detect GPU/CPU
+     COMPUTE_TYPE = "default"  # Options: default, float16, int8
+-    _model_instance = None
++    _models = {}  # Cache for multiple model sizes
+ 
+     @staticmethod
+-    def get_model():
++    def get_model(model_name: str = "base"):
+         """
+         Get Whisper model instance (lazy loading)
+         
++        Args:
++            model_name: The Whisper model size (e.g. base, small, medium)
++            
+         Returns:
+             WhisperModel instance
+             
+@@ -39,28 +42,64 @@ class SpeechService:
+             logger.error("faster-whisper is not installed. Install with: pip install faster-whisper")
+             raise ImportError("faster-whisper is required for speech transcription. Install with: pip install faster-whisper")
+ 
+-        if SpeechService._model_instance is None:
+-            logger.info(f"Loading Whisper model: {SpeechService.MODEL_NAME}")
++        if model_name not in SpeechService._models:
++            logger.info(f"Loading Whisper model: {model_name}")
+             try:
+-                SpeechService._model_instance = WhisperModel(
+-                    SpeechService.MODEL_NAME,
++                SpeechService._models[model_name] = WhisperModel(
++                    model_name,
+                     device=SpeechService.DEVICE,
+                     compute_type=SpeechService.COMPUTE_TYPE,
+                 )
+-                logger.info("Whisper model loaded successfully")
++                logger.info(f"Whisper model '{model_name}' loaded successfully")
+             except Exception as e:
+-                logger.error(f"Failed to load Whisper model: {str(e)}")
++                logger.error(f"Failed to load Whisper model '{model_name}': {str(e)}")
++                if model_name != "base":
++                    logger.info("Falling back to 'base' model")
++                    return SpeechService.get_model("base")
+                 raise
+ 
+-        return SpeechService._model_instance
++        return SpeechService._models[model_name]
++
++    @staticmethod
++    def detect_language_from_audio(audio_path: str) -> str:
++        """
++        Detect language by transcribing only the first 30 seconds of audio.
++        
++        Args:
++            audio_path: Path to the audio file
++            
++        Returns:
++            Language code (e.g., 'en', 'ml')
++        """
++        if not os.path.exists(audio_path):
++            logger.error(f"Audio file not found for language detection: {audio_path}")
++            return "en" # Fallback
++            
++        try:
++            logger.info(f"Detecting language from audio: {audio_path}")
++            model = SpeechService.get_model("base")
++            # Rapid detection with beam_size=1 and 30s chunk
++            segments, info = model.transcribe(
++                audio_path, 
++                beam_size=1, 
++                clip_timestamps="0,30"
++            )
++            detected_lang = info.language
++            logger.info(f"Language detected: {detected_lang}")
++            return detected_lang
++        except Exception as e:
++            logger.error(f"Language detection failed: {str(e)}", exc_info=True)
++            return "en" # Safely fallback
++
+ 
+     @staticmethod
+-    def transcribe_audio(audio_path: str) -> str:
++    def transcribe_audio(audio_path: str, language: Optional[str] = None) -> str:
+         """
+         Transcribe audio file to text using Faster-Whisper
+         
+         Args:
+             audio_path: Path to audio file (supports WAV, MP3, etc.)
++            language: Target language code ('en', 'ml')
+             
+         Returns:
+             Transcribed text
+@@ -76,19 +115,31 @@ class SpeechService:
+         try:
+             logger.info(f"Starting transcription for: {audio_path}")
+ 
+-            # Get model
+-            model = SpeechService.get_model()
++            # Get model - use 'small' for Malayalam to improve accuracy
++            model_name = "small" if language == "ml" else "base"
++            model = SpeechService.get_model(model_name)
+ 
+             # Transcribe audio
+-            logger.debug("Whisper transcription in progress...")
++            beam_size = 10 if language == "ml" else 5
++            vad_filter = False if language == "ml" else True
++            
++            logger.debug(f"Whisper transcription in progress (lang={language}, beam={beam_size}, vad={vad_filter})...")
++            
++            kwargs = {}
++            if language:
++                kwargs["language"] = language
++                
++            vad_parameters = dict(min_silence_duration_ms=500) if vad_filter else None
++            
+             segments, info = model.transcribe(
+                 audio_path,
+-                beam_size=5,
++                beam_size=beam_size,
+                 best_of=5,
+                 temperature=0.0,  # Greedy decoding for consistency
+                 condition_on_previous_text=False,  # Disable contextual conditioning for better accuracy
+-                vad_filter=True,               # Use VAD filter to ignore silence
+-                vad_parameters=dict(min_silence_duration_ms=500), # Strip out 500ms silences
++                vad_filter=vad_filter,
++                vad_parameters=vad_parameters,
++                **kwargs
+             )
+ 
+             logger.debug(f"Transcription completed. Language: {info.language}, Duration: {info.duration}s")
+@@ -124,13 +175,12 @@ class SpeechService:
+     @staticmethod
+     def unload_model():
+         """
+-        Unload the Whisper model to free memory
++        Unload the Whisper models to free memory
+         """
+-        if SpeechService._model_instance is not None:
++        if SpeechService._models:
+             try:
+-                # Delete the model instance
+-                del SpeechService._model_instance
+-                SpeechService._model_instance = None
+-                logger.info("Whisper model unloaded")
++                # Delete the model instances
++                SpeechService._models.clear()
++                logger.info("Whisper models unloaded")
+             except Exception as e:
+-                logger.error(f"Error unloading model: {str(e)}")
++                logger.error(f"Error unloading models: {str(e)}")
+diff --git a/recipe-scaler-backend/dump.py b/recipe-scaler-backend/dump.py
+new file mode 100644
+index 0000000..a2994bb
+--- /dev/null
++++ b/recipe-scaler-backend/dump.py
+@@ -0,0 +1,6 @@
++import traceback
++try:
++    import app.routes.ai
++except Exception as e:
++    with open('error_dump.txt', 'w') as f:
++        traceback.print_exc(file=f)
+diff --git a/recipe-scaler-backend/error_dump.txt b/recipe-scaler-backend/error_dump.txt
+new file mode 100644
+index 0000000..9913c55
+--- /dev/null
++++ b/recipe-scaler-backend/error_dump.txt
+@@ -0,0 +1,8 @@
++Traceback (most recent call last):
++  File "C:\Users\DELL\OneDrive\Desktop\Recipe\recipe-scaler-backend\dump.py", line 3, in <module>
++    import app.routes.ai
++  File "C:\Users\DELL\OneDrive\Desktop\Recipe\recipe-scaler-backend\app\routes\ai.py", line 16, in <module>
++    from app.services.translation_service import translation_service, Language
++  File "C:\Users\DELL\OneDrive\Desktop\Recipe\recipe-scaler-backend\app\services\translation_service.py", line 10, in <module>
++    from deep_translator import GoogleTranslator
++ModuleNotFoundError: No module named 'deep_translator'
+diff --git a/recipe-scaler-backend/error_trace.txt b/recipe-scaler-backend/error_trace.txt
+new file mode 100644
+index 0000000..7fa6a32
+Binary files /dev/null and b/recipe-scaler-backend/error_trace.txt differ
+diff --git a/recipe-scaler-backend/main.py b/recipe-scaler-backend/main.py
+index 2434478..7662e24 100644
+--- a/recipe-scaler-backend/main.py
++++ b/recipe-scaler-backend/main.py
+@@ -21,10 +21,10 @@ from app.routes import ingredient_substitutions
+ try:
+     from app.routes import ai
+     AI_AVAILABLE = True
+-except ImportError:
++except ImportError as e:
+     AI_AVAILABLE = False
+     import logging
+-    logging.warning("AI routes not available - missing ML dependencies (transformers, torch, spacy)")
++    logging.warning(f"AI routes not available - ImportError: {e}. Please ensure all ML dependencies from requirements.txt are installed.")
+ 
+ # Configure logging
+ logging.basicConfig(
+diff --git a/recipe-scaler-backend/temp/uiCs8jnodzc_1775758734.m4a b/recipe-scaler-backend/temp/uiCs8jnodzc_1775758734.m4a
+new file mode 100644
+index 0000000..9f50f61
+Binary files /dev/null and b/recipe-scaler-backend/temp/uiCs8jnodzc_1775758734.m4a differ
+diff --git a/recipe-scaler-backend/temp/uiCs8jnodzc_1775758734.temp.m4a b/recipe-scaler-backend/temp/uiCs8jnodzc_1775758734.temp.m4a
+new file mode 100644
+index 0000000..5e3d25f
+Binary files /dev/null and b/recipe-scaler-backend/temp/uiCs8jnodzc_1775758734.temp.m4a differ

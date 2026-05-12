@@ -229,8 +229,13 @@ const apiClient = {
    * @returns {Promise<{translated: Array|string, success: boolean}>}
    */
   async translate(content, targetLanguage) {
+    const isArrayContent = Array.isArray(content);
+    const isObjectArray = isArrayContent && content.every(item => item && typeof item === 'object');
+    const isStringArray = isArrayContent && content.every(item => typeof item === 'string');
+
     return this.post('/api/ai/translate', {
-      ingredients: Array.isArray(content) ? content : null,
+      ingredients: isObjectArray ? content : null,
+      texts: isStringArray ? content : null,
       text: typeof content === 'string' ? content : null,
       target_language: targetLanguage,
     });

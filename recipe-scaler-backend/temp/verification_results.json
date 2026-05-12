@@ -1,0 +1,183 @@
+{
+  "success": true,
+  "results": [
+    {
+      "text": "2 table spoons instant yeast",
+      "expected_names": [
+        "yeast"
+      ],
+      "expected_unit": "tbsp",
+      "extracted_names": [
+        "yeast"
+      ],
+      "extracted_units": [
+        "tbsp"
+      ],
+      "extracted_qtys": [
+        2
+      ],
+      "passed": true
+    },
+    {
+      "text": "red bell pepper, scotch bonnet bell pepper and green bell pepper",
+      "expected_names": [
+        "red bell pepper",
+        "scotch bonnet bell pepper",
+        "green bell pepper"
+      ],
+      "expected_unit": "whole",
+      "extracted_names": [
+        "scotch bonnet bell pepper",
+        "green bell pepper",
+        "red bell pepper"
+      ],
+      "extracted_units": [
+        "whole",
+        "whole",
+        "whole"
+      ],
+      "extracted_qtys": [
+        1,
+        1,
+        1
+      ],
+      "passed": true
+    },
+    {
+      "text": "3 carrots",
+      "expected_names": [
+        "carrot"
+      ],
+      "expected_unit": "whole",
+      "extracted_names": [
+        "carrot"
+      ],
+      "extracted_units": [
+        "whole"
+      ],
+      "extracted_qtys": [
+        3
+      ],
+      "passed": true
+    },
+    {
+      "text": "1/2 teaspoon curry powder",
+      "expected_names": [
+        "curry powder"
+      ],
+      "expected_unit": "tsp",
+      "extracted_names": [
+        "curry powder"
+      ],
+      "extracted_units": [
+        "tsp"
+      ],
+      "extracted_qtys": [
+        0.5
+      ],
+      "passed": true
+    },
+    {
+      "text": "1 seasoning cube",
+      "expected_names": [
+        "seasoning cube"
+      ],
+      "expected_unit": "whole",
+      "extracted_names": [
+        "seasoning cube"
+      ],
+      "extracted_units": [
+        "whole"
+      ],
+      "extracted_qtys": [
+        1
+      ],
+      "passed": true
+    },
+    {
+      "text": "1 cooking spoon vegetable oil",
+      "expected_names": [
+        "vegetable oil"
+      ],
+      "expected_unit": "cooking spoon",
+      "extracted_names": [
+        "vegetable oil"
+      ],
+      "extracted_units": [
+        "cooking spoon"
+      ],
+      "extracted_qtys": [
+        1
+      ],
+      "passed": true
+    },
+    {
+      "text": "2 Chicken breasts",
+      "expected_names": [
+        "chicken breasts"
+      ],
+      "expected_unit": "whole",
+      "extracted_names": [
+        "chicken breasts"
+      ],
+      "extracted_units": [
+        "whole"
+      ],
+      "extracted_qtys": [
+        2
+      ],
+      "passed": true
+    },
+    {
+      "text": "4 sausage pieces",
+      "expected_names": [
+        "sausage"
+      ],
+      "expected_unit": "whole",
+      "extracted_names": [
+        "sausage"
+      ],
+      "extracted_units": [
+        "whole"
+      ],
+      "extracted_qtys": [
+        4
+      ],
+      "passed": true
+    },
+    {
+      "text": "3 bacon slices",
+      "expected_names": [
+        "bacon"
+      ],
+      "expected_unit": "whole",
+      "extracted_names": [
+        "bacon"
+      ],
+      "extracted_units": [
+        "whole"
+      ],
+      "extracted_qtys": [
+        3
+      ],
+      "passed": true
+    },
+    {
+      "text": "sprinkle of salt",
+      "expected_names": [
+        "salt"
+      ],
+      "expected_unit": "",
+      "extracted_names": [
+        "salt"
+      ],
+      "extracted_units": [
+        ""
+      ],
+      "extracted_qtys": [
+        "sprinkle"
+      ],
+      "passed": true
+    }
+  ]
+}

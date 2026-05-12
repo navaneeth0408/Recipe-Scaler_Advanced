@@ -18,7 +18,9 @@
 
   <div class="main-content">
     <div class="card">
-      <h2>Step 1: Enter YouTube Link</h2>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span class="step-badge">1 — Find your recipe</span>
+      </div>
       <div class="search-container">
         <div class="search-tabs">
           <button class="search-tab active" data-tab="direct-link">Direct Link</button>
@@ -26,8 +28,11 @@
         </div>
 
         <div class="tab-content active" id="direct-link">
-          <input type="text" id="youtubeLink" placeholder="Enter YouTube Video URL">
-          <button onclick="fetchIngredients()">Fetch Ingredients</button>
+          <div class="url-input-row">
+            <input type="text" id="youtubeLink" placeholder="Enter YouTube Video URL">
+            <button class="icon-submit-btn" onclick="fetchIngredients()"><i class="fas fa-arrow-right"></i></button>
+          </div>
+          <p class="muted-helper">AI will extract ingredients from the video transcript</p>
         </div>
 
         <div class="tab-content" id="search-youtube">
@@ -70,31 +75,49 @@
       </div>
     </div>
 
-    <div class="scale-options">
-      <h2>Step 2: Scale Recipe</h2>
-      <div class="scale-controls">
+    <div class="scale-options" style="flex-direction: column;">
+      <div style="text-align: center; margin-bottom: 20px; width: 100%;">
+        <span class="step-badge">2 — Scale Recipe</span>
+      </div>
+      
+      <div class="quick-scale-container" style="width: 100%; margin-bottom: 15px;">
+        <div class="quick-scale-chips">
+          <button class="scale-chip" onclick="setQuickScale(0.5, this)">½×</button>
+          <button class="scale-chip active" onclick="setQuickScale(1, this)">1×</button>
+          <button class="scale-chip" onclick="setQuickScale(2, this)">2×</button>
+          <button class="scale-chip" onclick="setQuickScale(3, this)">3×</button>
+          <button class="scale-chip" onclick="showCustomScale(this)">Custom</button>
+        </div>
+      </div>
+
+      <div class="scale-controls" id="custom-scale-controls" style="display: none; width: 100%; justify-content: center; flex-wrap: wrap;">
         <label for="scalingOption">Adjust By:</label>
         <select id="scalingOption" onchange="updateScalingOptions()">
           <option value="servings">Servings</option>
-          <option value="quantity">Quantity</option>
           <option value="available">Available Ingredients</option>
-          <option value="custom">Custom Ratio</option>
         </select>
 
         <div id="standard-scaling" class="scaling-method">
           <input type="number" id="scalingValue" value="1" min="0.1" step="0.1">
         </div>
 
-        <div id="available-scaling" class="scaling-method" style="display:none">
-          <select id="availableIngredient"></select>
-          <input type="number" id="availableAmount" placeholder="Amount available" min="0.1" step="0.1">
+        <div id="available-scaling" class="scaling-method" style="display:none; width: 100%;">
+          <select id="availableIngredient" style="width: 100%; margin-bottom: 10px;"></select>
+          
+          <div class="quick-scale-chips" id="available-quick-chips" style="margin-bottom: 15px; justify-content: center;">
+            <button class="scale-chip" onclick="setAvailableQuickScale(0.25, this)">1/4×</button>
+            <button class="scale-chip" onclick="setAvailableQuickScale(0.5, this)">1/2×</button>
+            <button class="scale-chip active" onclick="setAvailableQuickScale(1, this)">1×</button>
+            <button class="scale-chip" onclick="setAvailableQuickScale(2, this)">2×</button>
+            <button class="scale-chip" onclick="setAvailableQuickScale(3, this)">3×</button>
+            <button class="scale-chip" onclick="showAvailableCustom(this)">Custom</button>
+          </div>
+
+          <div id="available-custom-input" style="display: none; margin-bottom: 15px;">
+            <input type="number" id="availableAmount" placeholder="Enter amount available" min="0.1" step="0.1" style="width: 100%;">
+          </div>
         </div>
 
-        <div id="custom-scaling" class="scaling-method" style="display:none">
-          <input type="number" id="customRatioStart" placeholder="Original" min="0.1" step="0.1">
-          <span>:</span>
-          <input type="number" id="customRatioEnd" placeholder="Target" min="0.1" step="0.1">
-        </div>
 
         <button class="scale-btn" onclick="scaleRecipe()">Scale Ingredients</button>
       </div>
@@ -142,6 +165,27 @@
           document.getElementById(tabId).classList.add('active');
         });
       });
+
+      // Quick scale logic
+      window.setQuickScale = function(multiplier, btn) {
+        document.querySelectorAll('.scale-chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const customControls = document.getElementById('custom-scale-controls');
+        if(customControls) customControls.style.display = 'none';
+        
+        // Trigger scale logic
+        document.getElementById('scalingOption').value = 'servings';
+        if (typeof updateScalingOptions === 'function') updateScalingOptions();
+        document.getElementById('scalingValue').value = multiplier;
+        if (typeof scaleRecipe === 'function') scaleRecipe();
+      };
+      
+      window.showCustomScale = function(btn) {
+        document.querySelectorAll('.scale-chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const customControls = document.getElementById('custom-scale-controls');
+        if(customControls) customControls.style.display = 'flex';
+      };
 
       // Return from "Modify Scaling"
       if (sessionStorage.getItem('modifyingRecipe') === 'true') {

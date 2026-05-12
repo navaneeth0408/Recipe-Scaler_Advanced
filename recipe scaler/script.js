@@ -106,11 +106,21 @@ function populateAvailableIngredients(ingredients) {
   const dropdown = document.getElementById("availableIngredient");
   if (!dropdown) return;
   dropdown.innerHTML = '';
+
+  const seen = new Set();
   ingredients.forEach((ingredient, index) => {
-    const option = document.createElement('option');
-    option.value = index;
-    option.innerText = ingredient.name;
-    dropdown.appendChild(option);
+    const name = (ingredient.name || '').toLowerCase().trim();
+    const unit = (ingredient.unit || '').toLowerCase().trim();
+    const key = `${name}|${unit}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      const option = document.createElement('option');
+      option.value = index;
+      const displayUnit = ingredient.unit && ingredient.unit.toLowerCase() !== 'whole' ? ` (${ingredient.unit})` : '';
+      option.innerText = (ingredient.name || `Ingredient ${index + 1}`) + displayUnit;
+      dropdown.appendChild(option);
+    }
   });
 }
 
@@ -183,7 +193,7 @@ function scaleRecipe() {
   const scaleFactor = scalingOption === "quantity" ? scalingValue / mainQuantity : scalingValue;
 
   const scaledIngredients = ingredientData.map(ing => {
-    const newQty = (ing.quantity * scaleFactor).toFixed(2).replace(/\.?0+$/, '');
+    const newQty = formatQuantity(ing.quantity * scaleFactor);
     return `${newQty} ${ing.unit} ${ing.name}`;
   });
 
@@ -290,22 +300,35 @@ function parseQuantity(qtyStr) {
   return isNaN(num) ? 1 : num;
 }
 
-function formatQuantity(quantity) {
-  if (!quantity) return "";
-  if (Math.abs(quantity - 0.5) < 0.01) return "½";
-  if (Math.abs(quantity - 0.25) < 0.01) return "¼";
-  if (Math.abs(quantity - 0.75) < 0.01) return "¾";
-  if (Math.abs(quantity - 0.33) < 0.01) return "⅓";
-  if (Math.abs(quantity - 0.67) < 0.01) return "⅔";
-  if (quantity > 1) {
-    if (Math.abs((quantity % 1) - 0.5) < 0.01) return `${Math.floor(quantity)} ½`;
-    if (Math.abs((quantity % 1) - 0.25) < 0.01) return `${Math.floor(quantity)} ¼`;
-    if (Math.abs((quantity % 1) - 0.75) < 0.01) return `${Math.floor(quantity)} ¾`;
-    if (Math.abs((quantity % 1) - 0.33) < 0.01) return `${Math.floor(quantity)} ⅓`;
-    if (Math.abs((quantity % 1) - 0.67) < 0.01) return `${Math.floor(quantity)} ⅔`;
+function formatQuantity(qty) {
+  const n = parseFloat(qty);
+  if (isNaN(n)) return '1';
+  if (Number.isInteger(n)) return String(n);
+
+  const whole = Math.floor(n);
+  const rem = parseFloat((n - whole).toFixed(3));
+
+  const fractionMap = {
+    0.25: '1/4',
+    0.5: '1/2',
+    0.75: '3/4',
+    0.333: '1/3',
+    0.667: '2/3',
+    0.125: '1/8',
+    0.375: '3/8',
+    0.625: '5/8',
+    0.875: '7/8',
+    0.2: '1/5',
+    0.4: '2/5',
+    0.6: '3/5',
+    0.8: '4/5'
+  };
+
+  const frac = fractionMap[rem];
+  if (frac) {
+    return whole > 0 ? `${whole} ${frac}` : frac;
   }
-  if (quantity % 1 === 0) return quantity.toString();
-  return parseFloat(quantity.toFixed(2)).toString();
+  return parseFloat(n.toFixed(2)).toString();
 }
 
 function updateScalingOptions() {

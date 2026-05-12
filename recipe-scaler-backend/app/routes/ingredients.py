@@ -272,30 +272,27 @@ def parse_ingredients_from_text(
                 if clean_line and not all(c in '-*=' for c in clean_line.replace(' ', '')):
                     extracted_ingredients.append(clean_line)
         
-        # Parse each ingredient string into structured data
+        # Parse each ingredient string strictly using the whitelist service
         ingredients = []
         for ingredient_text in extracted_ingredients:
             try:
-                parsed = IngredientService.parse_ingredient(ingredient_text)
-                if parsed and parsed['name'].strip():
-                    ingredients.append(
-                        Ingredient(
-                            name=parsed['name'],
-                            quantity=parsed['quantity'],
-                            unit=parsed['unit'],
-                            notes=parsed.get('notes')
+                # Use extract_ingredients instead of parse_ingredient, 
+                # to strictly enforce STIRCT_FOOD_WHITELIST and prevent garbage items like "the"
+                strict_matches = IngredientService.extract_ingredients(ingredient_text)
+                
+                for parsed in strict_matches:
+                    if parsed and parsed.get('name', '').strip():
+                        ingredients.append(
+                            Ingredient(
+                                name=parsed['name'],
+                                quantity=parsed['quantity'],
+                                unit=parsed['unit'],
+                                notes=parsed.get('notes')
+                            )
                         )
-                    )
             except Exception as e:
-                logger.warning(f"Could not parse ingredient '{ingredient_text}': {str(e)}")
-                # Still include it as-is with generic unit
-                ingredients.append(
-                    Ingredient(
-                        name=ingredient_text.strip(),
-                        quantity=1.0,
-                        unit='whole'
-                    )
-                )
+                logger.warning(f"Could not parse ingredient strictly '{ingredient_text}': {str(e)}")
+                # Do NOT fallback to parsing everything loosely to prevent "a", "the", "for" from getting added.
 
         return ParseIngredientsResponse(
             ingredients=ingredients,

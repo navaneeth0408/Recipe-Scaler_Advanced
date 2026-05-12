@@ -214,6 +214,7 @@ class Recipe(RecipeCreate):
     id: str
     created_at: datetime
     updated_at: datetime
+    view_count: int = 0
 
     class Config:
         json_schema_extra = {

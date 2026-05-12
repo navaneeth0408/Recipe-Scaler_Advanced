@@ -100,6 +100,14 @@ app.include_router(ingredient_substitutions.router)
 # Include AI routes only if dependencies are available
 if AI_AVAILABLE:
     app.include_router(ai.router)
+    # The models themselves are now lazy-loaded to save RAM at startup.
+    if os.getenv("SKIP_AI_MODELS", "false").lower() == "true":
+        logger.info("⚡ AI routes enabled, but heavy models (like BART) will be SKIPPED per SKIP_AI_MODELS=true")
+    else:
+        logger.info("🧠 AI routes enabled. Heavy models will be lazy-loaded on first use to save RAM at startup.")
+        logger.info("💡 TIP: Set SKIP_AI_MODELS=true in your environment to run in lightweight mode.")
+else:
+    logger.warning("⚠️ AI features are disabled because dependencies are missing. Rule-based extraction will be used.")
 
 # ============================================================================
 # ROOT ENDPOINT

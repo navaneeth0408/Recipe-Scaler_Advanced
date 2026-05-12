@@ -37,6 +37,7 @@ class RecipeDB(Base):
     instructions = Column(JSON, nullable=True)  # List of instruction strings
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    view_count = Column(Integer, default=0)
 
     # Relationships
     ingredients = relationship("IngredientDB", back_populates="recipe", cascade="all, delete-orphan")
@@ -53,6 +54,7 @@ class RecipeDB(Base):
             "ingredients": [ing.to_dict() for ing in self.ingredients],
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "view_count": self.view_count,
         }
 
 

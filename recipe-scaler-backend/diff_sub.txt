@@ -1,0 +1,53 @@
+diff --git a/recipe-scaler-backend/app/services/ai_substitution_service.py b/recipe-scaler-backend/app/services/ai_substitution_service.py
+index e44904a..ec19df0 100644
+--- a/recipe-scaler-backend/app/services/ai_substitution_service.py
++++ b/recipe-scaler-backend/app/services/ai_substitution_service.py
+@@ -118,6 +118,48 @@ SUBSTITUTIONS = {
+             "ratio_float": 0.1,
+             "note": "For color substitute (very expensive though)",
+         }
++    ],
++    "paneer": [
++        {
++            "name": "firm tofu",
++            "ratio": "1:1",
++            "ratio_float": 1.0,
++            "note": "Excellent dairy-free and vegan alternative"
++        },
++        {
++            "name": "halloumi",
++            "ratio": "1:1",
++            "ratio_float": 1.0,
++            "note": "Similar grilling and non-melting texture"
++        }
++    ],
++    "coconut milk": [
++        {
++            "name": "almond milk",
++            "ratio": "1:1",
++            "ratio_float": 1.0,
++            "note": "Much thinner, mild flavor"
++        },
++        {
++            "name": "heavy cream + water",
++            "ratio": "1:1",
++            "ratio_float": 1.0,
++            "note": "Dairy alternative with similar richness"
++        }
++    ],
++    "coriander powder": [
++        {
++            "name": "cumin powder",
++            "ratio": "1:1",
++            "ratio_float": 1.0,
++            "note": "Different flavor profile but works well in curries"
++        },
++        {
++            "name": "garam masala",
++            "ratio": "1:2",
++            "ratio_float": 0.5,
++            "note": "Use half as it's much stronger"
++        }
+     ]
+ }
+ 

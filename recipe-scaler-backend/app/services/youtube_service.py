@@ -278,10 +278,7 @@ class YouTubeService:
     @staticmethod
     def extract_ingredients_from_transcript(transcript: str) -> list:
         """
-        Extract ingredients from YouTube transcript using pattern matching
-        
-        This is a heuristic approach. For production, consider NLP models
-        like spaCy or custom ML models trained on recipe data.
+        Extract ingredients from YouTube transcript using strict whitelist from IngredientService.
         
         Args:
             transcript: Full video transcript text
@@ -291,49 +288,40 @@ class YouTubeService:
         """
         if not transcript:
             return []
+            
+        from app.services.ingredient_service import IngredientService
+        
+        try:
+            # Re-use the robust, strict ingredient service logic
+            extracted = IngredientService.extract_ingredients(transcript)
+            
+            for ing in extracted:
+                ing['extracted'] = True
+            
+            logger.debug(f"Extracted {len(extracted)} ingredients strictly from transcript")
+            return extracted
+        except Exception as e:
+            logger.error(f"Error extracting ingredients from transcript: {str(e)}")
+            return []
 
-        ingredients = []
-        
-        # Patterns for common ingredient formats
-        # Format: number (1, 1/2, 1.5) + unit (cup, tsp, tbsp, g, oz, etc) + ingredient
-        ingredient_pattern = r'(\d+(?:/\d+)?(?:\.\d+)?)\s*(?:cups?|tsp|tbsp|tablespoons?|teaspoons?|oz|g|kg|ml|l|pounds?|lbs?)\s+(?:of\s+)?([a-z\s]+?)(?:\s+(?:and|,|or|the)|$)'
-        
-        matches = re.finditer(ingredient_pattern, transcript, re.IGNORECASE)
-        
-        for match in matches:
-            quantity_str = match.group(1)
-            ingredient_name = match.group(2).strip()
+    @staticmethod
+    def extract_ingredients_from_description(description: str) -> list:
+        """
+        Extract ingredients from YouTube video description using AI service.
+        Descriptions often contain organized ingredient lists.
+        """
+        if not description:
+            return []
             
-            # Skip very short ingredient names (likely errors)
-            if len(ingredient_name) < 2:
-                continue
-            
-            # Convert fraction to decimal
-            if '/' in quantity_str:
-                parts = quantity_str.split('/')
-                try:
-                    quantity = float(parts[0]) / float(parts[1])
-                except (ValueError, ZeroDivisionError):
-                    quantity = float(quantity_str)
-            else:
-                quantity = float(quantity_str)
-            
-            ingredients.append({
-                'name': ingredient_name.lower(),
-                'quantity': quantity,
-                'extracted': True
-            })
+        from app.services.ai_ingredient_service import ai_ingredient_service
         
-        # Remove duplicates while preserving order
-        seen = set()
-        unique_ingredients = []
-        for ing in ingredients:
-            if ing['name'] not in seen:
-                seen.add(ing['name'])
-                unique_ingredients.append(ing)
-        
-        logger.debug(f"Extracted {len(unique_ingredients)} unique ingredients from transcript")
-        return unique_ingredients
+        try:
+            logger.info("Extracting ingredients from YouTube description using AI")
+            ingredients = ai_ingredient_service.extract_and_normalize_ingredients(description)
+            return ingredients
+        except Exception as e:
+            logger.error(f"Error extracting ingredients from description: {str(e)}")
+            return []
 
     @staticmethod
     def is_valid_youtube_url(url: str) -> bool:

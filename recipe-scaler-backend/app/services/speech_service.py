@@ -7,10 +7,8 @@ import logging
 import os
 from typing import Optional
 
-try:
-    from faster_whisper import WhisperModel
-except ImportError:
-    WhisperModel = None
+# This will be loaded lazily to speed up backend startup
+WhisperModel = None
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +18,8 @@ class SpeechService:
 
     # Whisper model configuration
     MODEL_NAME = "base"  # Options: tiny, base, small, medium, large
-    DEVICE = "auto"  # Auto-detect GPU/CPU
-    COMPUTE_TYPE = "default"  # Options: default, float16, int8
+    DEVICE = "cpu"  # Force CPU for better stability on low-mem machines, or use "auto"
+    COMPUTE_TYPE = "int8"  # Optimized for CPU RAM usage
     _models = {}  # Cache for multiple model sizes
 
     @staticmethod
@@ -38,9 +36,14 @@ class SpeechService:
         Raises:
             ImportError: If faster-whisper is not installed
         """
+        global WhisperModel
         if WhisperModel is None:
-            logger.error("faster-whisper is not installed. Install with: pip install faster-whisper")
-            raise ImportError("faster-whisper is required for speech transcription. Install with: pip install faster-whisper")
+            logger.info("Lazy importing 'faster_whisper' library...")
+            try:
+                from faster_whisper import WhisperModel
+            except ImportError:
+                logger.error("faster-whisper is not installed. Install with: pip install faster-whisper")
+                raise ImportError("faster-whisper is required for speech transcription. Install with: pip install faster-whisper")
 
         if model_name not in SpeechService._models:
             logger.info(f"Loading Whisper model: {model_name}")
